@@ -3,6 +3,7 @@
 set -e
 SCRIPT_PATH=$0
 SCRIPT_NAME=$(basename ${SCRIPT_PATH})
+trap cleanup EXIT
 
 function help() {
     bold=$(tput bold)
@@ -138,6 +139,10 @@ function main(){
     mv fort.71 ${RES_DIR}/reprobus_niamey_${DATE_OUT}_${EXP}
     mv fort.72 ${RES_DIR}/reprobus_teresina_${DATE_OUT}_${EXP}
 
+    rm ${WDIR}/*
+}
+
+function cleanup(){
     rm ${WDIR}/*
 }
 
