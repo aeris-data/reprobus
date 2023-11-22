@@ -112,10 +112,6 @@ EOF
     gfortran -march=native -O3 -Wno-tabs -fconvert=big-endian -o ${WORKING_DIR}/grib_rep ${WORKING_DIR}/grib_rep.f90
 }
 
-function clenup(){
-
-}
-
 function main(){
 
     write_fortran_script
