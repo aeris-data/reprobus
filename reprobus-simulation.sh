@@ -49,19 +49,31 @@ function check_args(){
         err_msg "Unrecognized compiler options. Options are 'nvidia' or 'ifort', check your configuration file"
         exit_status=1
     fi
-    if [[ ${fdate} =~ ^[0-9]{8}$ ]]; then
+    if [[ ${START_DATE} =~ ^[0-9]{8}$ ]]; then
         exit_status=0
     else
-        err_msg "Starting date 'fdate' is not in the correct format YYYYMMDD"
+        err_msg "Starting date is not in the correct format YYYYMMDD"
         exit_status=1
     fi
-    if [[ ${zdate} =~ ^[0-9]{8}$ ]]; then
+    if [[ ${END_DATE} =~ ^[0-9]{8}$ ]]; then
         exit_status=0
     else
-        err_msg "Ending date 'zdate' is not in the correct format YYYYMMDD"
+        err_msg "Ending date is not in the correct format YYYYMMDD"
         exit_status=1
     fi
     return ${exit_status}
+}
+
+function count_days(){
+    start_timestamp=$(date -d "${START_DATE}" +%s)
+    end_timestamp=$(date -d "${END_DATE}" +%s)
+    time_diff=$((end_timestamp - start_timestamp))
+    days_diff=$((time_diff / 86400))
+    echo ${days_diff}
+}
+
+function cleanup(){
+    rm -f ${WDIR}/*
 }
 
 function main(){
@@ -76,13 +88,6 @@ function main(){
     info_msg "!======================================================================!"
 
     cd ${WDIR}
-    DATE_IN=$fdate"12"
-    DATE_OUT=$zdate"12"
-
-    info_msg "Preparing input data for the simulation"
-
-    ln -s ${DATA_DIR}/ecmwf_$fdate ${WDIR}/ecmwf_$fdate
-    ln -s ${DATA_DIR}/ecmwf_$zdate ${WDIR}/ecmwf_$zdate
 
     info_msg "Compiling REPROBUS"
 
@@ -102,48 +107,75 @@ function main(){
         nvfortran -r8 -mcmodel=medium -fast -Kieee -byteswapio -o reprobus_${EXP:2:4} reprobus_${EXP:2:4}.f jno.f90 altitude.f90
     fi
 
-    if [[ $NSTART == 1 ]]; then
-        ln -s ${RESTART_DIR}/MODEL_history_${DATE_IN}_${EXP} ${WDIR}/fort.90
-    else
-        ln -s /usr/local/REPROBUS/src/qinit2d_l137_201006.20140331 ${WDIR}/qinit2d.txt
-        ln -s ${DATA_DIR}/ecmwf_o3_20221201 ${WDIR}/ecmwf_o3_20221201
-    fi
+    N_DAYS=$(count_days)
+    DATE_IN=${START_DATE}
+    DATE_OUT=${END_DATE}
+    info_msg "Simulation will be performed through ${NDAYS} days, from ${START_DATE} to ${END_DATE}"
 
-    info_msg "Launching REPROBUS"
+    while [ ${DATE_IN} -lt ${DATE_OUT} ]; do
 
-    ./reprobus_${EXP:2:4}
-    status=$?
+        date_start=${DATE_IN}
+        date_end=$(date -d "${DATE_IN} + 1 day" "+%Y%m%d")
 
-    if [ ${status} == 0 ]; then
-        info_msg "Simulation successful, continuing with the script"
-    else
-        err_msg "Something went wrong with the simulation, check the log messages above for more information"
-        exit 1
-    fi
+        info_msg "Preparing input data for the simulation"
 
-    info_msg "Organizing output files"
+        ln -s ${DATA_DIR}/ecmwf_${date_start} ${WDIR}/ecmwf_${date_start}
+        ln -s ${DATA_DIR}/ecmwf_${date_end} ${WDIR}/ecmwf_${date_end}
 
-    mv history ${RESTART_DIR}/MODEL_history_${DATE_OUT}_${EXP}
-    mv stations.txt ${RES_DIR}/stations_${DATE_OUT}_${EXP}
-    mv fort.60 ${RES_DIR}/reprobus_kiruna_${DATE_OUT}_${EXP}
-    mv fort.61 ${RES_DIR}/reprobus_ohp_${DATE_OUT}_${EXP}
-    mv fort.62 ${RES_DIR}/reprobus_nyaalesund_${DATE_OUT}_${EXP}
-    mv fort.63 ${RES_DIR}/reprobus_sodankyla_${DATE_OUT}_${EXP}
-    mv fort.64 ${RES_DIR}/reprobus_yakutsk_${DATE_OUT}_${EXP}
-    mv fort.65 ${RES_DIR}/reprobus_ddu_${DATE_OUT}_${EXP}
-    mv fort.66 ${RES_DIR}/reprobus_harestua_${DATE_OUT}_${EXP}
-    mv fort.67 ${RES_DIR}/reprobus_marambio_${DATE_OUT}_${EXP}
-    mv fort.68 ${RES_DIR}/reprobus_southpole_${DATE_OUT}_${EXP}
-    mv fort.69 ${RES_DIR}/reprobus_airesadour_${DATE_OUT}_${EXP}
-    mv fort.70 ${RES_DIR}/reprobus_eureka_${DATE_OUT}_${EXP}
-    mv fort.71 ${RES_DIR}/reprobus_niamey_${DATE_OUT}_${EXP}
-    mv fort.72 ${RES_DIR}/reprobus_teresina_${DATE_OUT}_${EXP}
+        if [[ ${NSTART} == 1 ]]; then
+            ln -s ${RESTART_DIR}/MODEL_history_${date_start}12_${EXP} ${WDIR}/fort.90
+        else
+            ln -s /usr/local/REPROBUS/src/qinit2d_l137_201006.20140331 ${WDIR}/qinit2d.txt
+            ln -s ${DATA_DIR}/ecmwf_o3_20221201 ${WDIR}/ecmwf_o3_20221201
+        fi
 
-    rm ${WDIR}/*
-}
+        info_msg "Working directory for the current date simulation"
+        ls -l ${WDIR}
 
-function cleanup(){
-    rm ${WDIR}/*
+        info_msg "Launching REPROBUS"
+
+        ./reprobus_${EXP:2:4}
+        status=$?
+
+        if [[ ${status} == 0 ]]; then
+            info_msg "Simulation successful, continuing with the script"
+        else
+            err_msg "Something went wrong with the simulation, check the log messages above for more information"
+            exit 1
+        fi
+
+        info_msg "Organizing output files"
+
+        mv history ${RESTART_DIR}/MODEL_history_${date_end}12_${EXP}
+        mv stations.txt ${RES_DIR}/stations_${date_end}12_${EXP}
+        mv fort.60 ${RES_DIR}/reprobus_kiruna_${date_end}12_${EXP}
+        mv fort.61 ${RES_DIR}/reprobus_ohp_${date_end}12_${EXP}
+        mv fort.62 ${RES_DIR}/reprobus_nyaalesund_${date_end}12_${EXP}
+        mv fort.63 ${RES_DIR}/reprobus_sodankyla_${date_end}12_${EXP}
+        mv fort.64 ${RES_DIR}/reprobus_yakutsk_${date_end}12_${EXP}
+        mv fort.65 ${RES_DIR}/reprobus_ddu_${date_end}12_${EXP}
+        mv fort.66 ${RES_DIR}/reprobus_harestua_${date_end}12_${EXP}
+        mv fort.67 ${RES_DIR}/reprobus_marambio_${date_end}12_${EXP}
+        mv fort.68 ${RES_DIR}/reprobus_southpole_${date_end}12_${EXP}
+        mv fort.69 ${RES_DIR}/reprobus_airesadour_${date_end}12_${EXP}
+        mv fort.70 ${RES_DIR}/reprobus_eureka_${date_end}12_${EXP}
+        mv fort.71 ${RES_DIR}/reprobus_niamey_${date_end}12_${EXP}
+        mv fort.72 ${RES_DIR}/reprobus_teresina_${date_end}12_${EXP}
+
+        python3 /home/resos/git/reprobus/post-process-reprobus.py --date ${date_end} --restart-dir ${RESTART_DIR} --res-dir ${RES_DIR}
+
+        rm ${WDIR}/ecmwf_${date_start}
+        rm ${WDIR}/ecmwf_${date_end}
+        if [[ ${NSTART} == 1 ]]; then
+            rm ${WDIR}/fort.90
+        else
+            rm ${WDIR}/qinit2d.txt
+            rm ${WDIR}/ecmwf_o3_20221201
+        fi
+
+        DATE_IN=$(date -d "${DATE_IN} + 1 day" "+%Y%m%d")
+
+    done
 }
 
 # +----------------------------------+

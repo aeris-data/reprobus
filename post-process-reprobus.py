@@ -8,9 +8,19 @@ import datetime as dt
 import os
 import netCDF4 as nc
 import glob
+import logging
 
 SPECIES_1 = ['N2O','CH4','H2O','NOy','HNO3','N2O5','Cly','Ox','CO','OClO','Passive Ox','H2SO4','HCl','ClONO2','HOCl','Cl2','H2O2','ClNO2','HBr','BrONO2','NOx','HNO4','ClOx','BrOx','Cl2O2','HOBr','BrCl','CH2O','CH3O2','CH3O2H','CFC-11','CFC-12','CFC-113','CCl4','CH3CCl3*','CH3Cl','HCFC-22*','CH3Br','H-1211*','H-1301','Bry','CH2Br2*','HNO3 GAS']
 SPECIES_2 = ['O(1D)','OH','Cl','O(3P)','O3','HO2','NO2','NO','Br','N','ClO','BrO','NO3','H','CH3']
+
+def start_log() -> logging.Logger:
+    log_handlers = [logging.StreamHandler()]
+    logging.basicConfig(format="%(asctime)s   [%(levelname)s]   %(message)s",
+                        datefmt="%d/%m/%Y %H:%M:%S",
+                        handlers=log_handlers)
+    logger = logging.getLogger('my_log')
+    logger.setLevel(logging.INFO)
+    return logger
 
 def MODEL_post_processing(date: str, restart_dirpath: str) -> None:
     """
@@ -20,10 +30,11 @@ def MODEL_post_processing(date: str, restart_dirpath: str) -> None:
         date (str): date of the MODEL_history file
         restart_dirpath (str): directory where to find this file
     """
-    fortran_file_filepath = glob.glob(f"{restart_dirpath}/MODEL_history_{date}12*")
+    fortran_file_filepath = glob.glob(f"{restart_dirpath}/MODEL_history_{date}12_??????")[0]
     data_time_string = os.path.basename(fortran_file_filepath).split("_")[2]
     data_time = dt.datetime.strptime(data_time_string, "%Y%m%d%H") - dt.datetime.strptime("1970-01-01 00:00", "%Y-%m-%d %H:%M")
 
+    LOGGER.info(f"Creating netCDF vesrion of {os.path.basename(fortran_file_filepath)}")
     with open(fortran_file_filepath, 'rb') as file:
         # Read the 6-character string
         data_string = file.read(10)
@@ -42,7 +53,7 @@ def MODEL_post_processing(date: str, restart_dirpath: str) -> None:
         hc = np.fromfile(file, dtype='>f8', count=180*91*137*15)
         hc = hc.reshape(15, 137, 91, 180)
 
-    pression_levels_filepath = "/usr/local/REPROBUS/table.csv"
+    pression_levels_filepath = "/home/resos/git/reprobus/table.csv"
     df = pd.read_csv(pression_levels_filepath)
     pression_levels = [float(elem) for elem in df["pf [hPa]"].values[1:]]
 
@@ -135,8 +146,9 @@ def stations_post_processing(date: str, result_dirpath: str) -> None:
         result_dirpath (str): directory where to find these files
     """
     # *********************************************************************************************
-    files = glob.glob(f"{result_dirpath}/reprobus_*_{date}12_*")
+    files = glob.glob(f"{result_dirpath}/reprobus_*_{date}12_??????")
     for input_filename in files:
+        LOGGER.info(f"Creating netCDF version of {os.path.basename(input_filename)}")
         output_filename = f"{result_dirpath}/{os.path.basename(input_filename)}.nc"
         with open(input_filename, "r") as f:
             lines = f.readlines()
@@ -165,7 +177,7 @@ def stations_post_processing(date: str, result_dirpath: str) -> None:
             ds.createVariable("temperature", "f4", ("altitude"))
             ds.createVariable("theta", "f4", ("altitude"))
             ds.createVariable("density", "f4", ("altitude"))
-            for varname in ["N2O","CH4","H20","NOy","HNO3","N2O5"]:
+            for varname in ["N2O","CH4","H2O","NOy","HNO3","N2O5"]:
                 ds.createVariable(varname, "f4", ("time","altitude"))
             for ii in range(len(parts)):
                 part = lines[start_index[ii]:end_index[ii]]
@@ -189,6 +201,7 @@ def stations_post_processing(date: str, result_dirpath: str) -> None:
     # *********************************************************************************************
     files = glob.glob(f"{result_dirpath}/stations_{date}??_??????")
     for input_file in files:
+        LOGGER.info(f"Creating netCDF version of {os.path.basename(input_file)}")
         df = pd.DataFrame({"Station name": [],
                         "Julian day": [],
                         "Date": [],
@@ -201,7 +214,7 @@ def stations_post_processing(date: str, result_dirpath: str) -> None:
             lines = f.readlines()
         df["Station name"] = [line[:13].strip() for line in lines]
         df["Julian day"] = [float(line[13:19].strip()) for line in lines]
-        df["Date"] = pd.to_datetime(df["Julian day"], unit='D', origin=f"{os.path.basename(file).split('_')[1][:4]}-01-01")
+        df["Date"] = pd.to_datetime(df["Julian day"], unit='D', origin=f"{os.path.basename(input_file).split('_')[1][:4]}-01-01")
         df["O3_1"] = [float(line[20:26].strip()) for line in lines]
         df["O3_2"] = [float(line[30:35].strip()) for line in lines]
         df["NO2"] = [float(line[41:51].strip()) for line in lines]
@@ -255,4 +268,9 @@ if __name__=="__main__":
     parser.add_argument("--res-dir",  type=str, help="Path to the directory where the station result files are stored")
     args = parser.parse_args()
 
+    global LOGGER
+    LOGGER = start_log()
+
+    LOGGER.info("Starting post-processing of the REPROBUS output")
     MODEL_post_processing(args.date, args.restart_dir)
+    stations_post_processing(args.date, args.res_dir)
