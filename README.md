@@ -24,6 +24,8 @@ The main script is `reprobus-simulation.sh` which needs the input configuration 
 The script must be launched inside the Singularity container. The outputs of the simulation are : simulation results for the 40 observation stations, the daily REPROBUS recovery files (also needed for the ulterior simulations) and the PNG files of the results visualisation . More details about input/output and folder structure are in the manual `xxx.pdf`.
 
 ## Input meteorological data extraction
-The input data for the simulations is meteorological data : wind, temperature, humidity and logarithm of surface pressure, coming from the ECMWF database. To extract and prepare the data in the correct format, the script `reprobus-extract-ecmwf.sh` should be used. This script handles the data extraction and its formatting for the REPROBUS tool. The user can configure the start and end date of the data, as well as the spatial resolution.
-
-The script must be launched on the ECMWF MARS server (ecs, hpc or other). The data extraction was tested with a member-state user account. Other more public accounts might customize the script based on the MARS services or APIs available for their type of user. The data is extracted and stored in the directory requested in the input configuration; afterwards, the data can be used for the simulation.
+The input data for the simulations is meteorological data : wind, temperature, humidity and logarithm of surface pressure, coming from the ECMWF database. To extract and prepare the data in the correct format, the script `reprobus-extract-ecmwf.sh` should be used:
+```
+./reprobus-extract-ecmwf.sh --config ./ecmwf.conf
+```
+This script handles the data extraction and its formatting for the REPROBUS tool. The user can configure the start and end date of the data, as well as the spatial resolution. The script must be launched on the ECMWF MARS server (ecs, hpc or other). The data extraction was tested with a member-state user account. Other more public accounts might customize the script based on the MARS services or APIs available for their type of user. The data is extracted and stored in the directory requested in the input configuration; afterwards, the data can be used for the simulation.
