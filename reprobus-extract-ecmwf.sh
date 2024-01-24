@@ -28,6 +28,34 @@
 set -e
 module load ecmwf-toolbox
 
+function help() {
+    bold=$(tput bold)
+    normal=$(tput sgr0)
+    echo "# ########################################"
+    echo "# #                          __   _      #"
+    echo "# #  SCRIPT FOR            _(  )_( )_    #"
+    echo "# #   THE ECMWF           (_   _    _)   #"
+    echo "# #    DATA EXTRACTION   / /(_) (__)     #"
+    echo "# #                     / / / / / /      #"
+    echo "# #                    / / / / / /       #"
+    echo "# ########################################"
+    echo "#"
+    echo "# ${bold}${SCRIPT_NAME}${normal} script handles the ECMWF data extraction needed for the REPROBUS simulations."
+    echo "# The user have to define the start and end date of the data extraction and the paths"
+    echo "# to the working directory and data directory."
+    echo "# The working directory will just contain the request file for the MARS API; the data"
+    echo "# directory will contain the final extracted data; the working and data directories can be the same."
+    echo "# The data will be extracted on the model levels of the ECMWF."
+    echo "# The extraction is performed on the MARS server, so the script should be launched on this server."
+    echo "#"
+    echo "# Usage: ${SCRIPT_NAME} [options] arguments"
+    echo "# Options:"
+    echo "#   ${bold}-h, --help${normal}     Show this help message and exit"
+    echo "# Arguments:"
+    echo "#   ${bold}--config conf_filepath${normal}  This argument must correspond to the configuration"
+    echo "# file where the user defines input parameters needed for the extraction."
+}
+
 function info_msg(){
     txt=$1
     echo "$(date +'%d/%m/%Y %H:%M:%S')   [INFO]   ${txt}"
@@ -44,6 +72,26 @@ function warn_msg(){
 }
 
 function check_args(){
+    if [[ -z ${START_DATE} ]]; then
+        err_msg "No start date was defined. Exiting script."
+        exit 1
+    fi
+    if [[ -z ${END_DATE} ]]; then
+        err_msg "No end date was defined. Exiting script."
+        exit 1
+    fi
+    if [[ -z ${SPATIAL_RESOLUTION} ]]; then
+        err_msg "No spatial resolution was defined. Exiting script."
+        exit 1
+    fi
+    if [[ -z ${DATA_DIR} ]]; then
+        err_msg "No data directory was defined. Exiting script."
+        exit 1
+    fi
+    if [[ -z ${WORKING_DIR} ]]; then
+        err_msg "No working directory was defined. Exiting script."
+        exit 1
+    fi
     if [[ ${START_DATE} =~ ^[0-9]{8}$ ]]; then
         exit_status=0
     else
