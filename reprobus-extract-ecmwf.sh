@@ -169,6 +169,8 @@ EOF
             grib_get_data -w time=${TIME_VALUES[i]},step=${STEP_VALUES[i]} -M -F "%.15e" ${DATA_DIR}/datafile >> ${DATA_DIR}/data
         done
 
+        ${DATA_DIR}/grib_rep
+
         mv ${DATA_DIR}/fort.10 ${DATA_DIR}/ecmwf_${DATE}
 
         rm ${DATA_DIR}/data ${DATA_DIR}/entete ${DATA_DIR}/datafile
