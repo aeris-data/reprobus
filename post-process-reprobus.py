@@ -9,9 +9,51 @@ import os
 import netCDF4 as nc
 import glob
 import logging
+from matplotlib.colors import ListedColormap
+import cartopy.crs as ccrs
 
 SPECIES_1 = ['N2O','CH4','H2O','NOy','HNO3','N2O5','Cly','Ox','CO','OClO','Passive Ox','H2SO4','HCl','ClONO2','HOCl','Cl2','H2O2','ClNO2','HBr','BrONO2','NOx','HNO4','ClOx','BrOx','Cl2O2','HOBr','BrCl','CH2O','CH3O2','CH3O2H','CFC-11','CFC-12','CFC-113','CCl4','CH3CCl3*','CH3Cl','HCFC-22*','CH3Br','H-1211*','H-1301','Bry','CH2Br2*','HNO3 GAS']
 SPECIES_2 = ['O(1D)','OH','Cl','O(3P)','O3','HO2','NO2','NO','Br','N','ClO','BrO','NO3','H','CH3']
+
+PLOT_LEVELS = {
+"N2O" : [-20.,0.,20.,40.,60.,80.,100.,120.,140.,160.,180.,200.,220.,240.,260.,280.,300.,320.,340.],
+"HCl" : [-0.2,0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0],
+"ClONO2" : [-0.2,0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0],
+"NOx" : [-0.25,0,0.25,0.5,0.75,1.,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.,4.25,4.5],
+"ClOx" : [-0.025,0.,0.025,0.05,0.075,0.1,0.2,0.3,0.4,0.5,1.0,1.5,2.0,2.5,3.0,3.5],
+"BrOx" : [-1.,0,1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12.,13.,14.,15.,16.,17.,18.,19.,20.,],
+"HNO3" : [-1,0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0],
+"Surface_Area" : [-1.5,0,1.5,3.0,4.5,6.0,7.5,9.0,10.5,12.,13.5,15.,16.5,18.0,19.5,21.,22.5],
+"O3loss" : [-75.,-70.,-65.,-60.,-55.,-50.,-45.,-40,-35.,-30.,-25.,-20.,-15.,-10.,-5.,0.,5.],
+"O3" : [-0.4,0.,0.4,0.8,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4.0,4.4,4.8,5.2,5.6,6.],
+"NO2" : [-0.25,0,0.25,0.5,0.75,1.,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.,4.25,4.5]}
+
+PLOT_COEFFS = {
+"N2O" : 1e-9,
+"HCl" : 1e-9,
+"ClONO2" : 1e-9,
+"NOx" : 1e-9,
+"ClOx" : 1e-9,
+"BrOx" : 1e-12,
+"HNO3" : 1e-9,
+"Surface_Area" : 1e-8,
+"O3loss" : 1,
+"O3" : 1e-6,
+"NO2" : 1e-9}
+
+PLOT_UNITS = {
+"N2O" : "(ppbv)",
+"HCl" : "(ppbv)",
+"ClONO2" : "(ppbv)",
+"NOx" : "(ppbv)",
+"ClOx" : "(ppbv)",
+"BrOx" : "(pptv)",
+"HNO3" : "(ppbv)",
+"Surface_Area" : "(1e-8)",
+"O3loss" : "(%)",
+"O3" : "(ppmv)",
+"NO2" : "(ppbv)"}
+
 
 def start_log() -> logging.Logger:
     log_handlers = [logging.StreamHandler()]
@@ -257,6 +299,220 @@ def stations_post_processing(date: str, result_dirpath: str) -> None:
                 ds["NO2/"+varname][:] = df_res.loc[df_res["Station name"]==varname]["NO2"]
                 ds["OClO/"+varname][:] = df_res.loc[df_res["Station name"]==varname]["OClO"]
 
+def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
+    # =============================================================================
+    # COEFFICIENTS A ET B DES NIVEAUX HYBRIDES
+    # =============================================================================
+    df = pd.read_csv("/usr/local/REPROBUS/ecmwf_137_levels.txt",
+                     sep="\t",
+                     skiprows=2,
+                     names = ["n","a","b","ph[hPa]","pf[hPa]"])
+    aaa = (df["a"].values[:-1] + df["a"].values[1:])*0.5*0.01
+    bbb = (df["b"].values[:-1] + df["b"].values[1:])*0.5
+    # =============================================================================
+    # ISOTHETA ; ISENTROPE CHOISIE POUR LE TRACE
+    # =============================================================================
+    nbcon = 44
+    ncm = 15
+    fortran_file_filepath = glob.glob(f"{restart_dirpath}/MODEL_history_{date}12_??????")[0]
+    with open(fortran_file_filepath, 'rb') as file:
+        # Read the 6-character string
+        data_string = file.read(10)
+        data_integers = struct.unpack('>iiiii', file.read(20))
+        pj1 = np.fromfile(file, dtype='>f8', count=180*91)
+        pj1 = pj1.reshape(91, 180)
+        matrices_4d = {"uj1":[], "vj1":[], "alt":[], "tj1":[]}
+        for key in ["uj1","vj1","alt","tj1"]:
+            matrix_4d = np.fromfile(file, dtype='>f8', count=180*91*137)
+            matrix_4d = matrix_4d.reshape(137, 91, 180)
+            matrices_4d[key] = matrix_4d
+        qj1 = np.fromfile(file, dtype='>f8', count=180*91*137*nbcon)
+        qj1 = qj1.reshape(nbcon, 137, 91, 180)
+        hc = np.fromfile(file, dtype='>f8', count=180*91*137*ncm)
+        hc = hc.reshape(ncm, 137, 91, 180)
+    ds = xr.Dataset(data_vars={"pj1":(["lat", "lon"], pj1),
+                               "uj1":(["niv", "lat", "lon"], matrices_4d["uj1"]),
+                               "vj1":(["niv", "lat", "lon"], matrices_4d["vj1"]),
+                               "alt":(["niv", "lat", "lon"], matrices_4d["alt"]),
+                               "tj1":(["niv", "lat", "lon"], matrices_4d["tj1"]),
+                               "qj1":(["dim1", "niv", "lat", "lon"], qj1),
+                               "hc":(["dim2", "niv", "lat", "lon"], hc),
+                               "aaa":(["niv"], aaa),
+                               "bbb":(["niv"], bbb)})
+    # =============================================================================
+    #   BOUCLER SUR THETA
+    # =============================================================================
+    nlat = 91
+    nlon = 180
+    nlonp1 = nlon+1
+    lon = np.arange(nlonp1)*362/nlonp1
+    lat = 90 - np.arange(nlat)*180/(nlat-1)
+    
+    rter  = 6.371229e+06
+    gg    = 9.80665
+    omega = 7.292e-05
+    rascp = 2./7.
+    p0    = 1000.
+
+    theta_arr = [435., 475., 550.]
+
+    nlong = 9
+    nshort = 2
+    il_arr = np.array([1,13,14,21,23,24,43,44,11]) - 1
+    il_names = ["N2O","HCl","ClONO2","NOx","ClOx","BrOx","HNO3","Surface_Area","O3loss"]
+    is_arr = np.array([5, 7])-1
+    is_names = ["O3","NO2"]
+
+    output_ds = xr.Dataset(coords={"theta":(["theta"], theta_arr),
+                                    "lat":(["lat"], lat),
+                                    "lon":(["lon"], lon)})
+    species_da = {}
+    for i_theta, theta_value in enumerate(theta_arr):
+        n_fich = n_fich + 1
+        # =============================================================================
+        # Calcul de theta à chaque point de grille
+        # =============================================================================
+        pmb = ds["aaa"] + ds["pj1"]*ds["bbb"]
+        theta = ds["tj1"]*((p0/pmb)**rascp)
+        # =============================================================================
+        # Detection des niveaux encadrant isotheta, calcul des poids
+        # =============================================================================
+        index = (theta<theta_value).argmax(dim="niv")
+        cinf  = (theta_value - theta.isel(niv=index)) / (theta.isel(niv=index-1) - theta.isel(niv=index))
+        csup  = 1 - cinf
+        # =============================================================================
+        # Calcul de dthetadp aux niveaux qui encadrent isotheta,
+        # puis interpolation verticale
+        # =============================================================================
+        dthetadpsup = (theta.isel(niv=index-2) - theta.isel(niv=index)) / ((pmb.isel(niv=index-2) - pmb.isel(niv=index))*100)
+        dthetadpinf = (theta.isel(niv=index-1) - theta.isel(niv=index+1)) / ((pmb.isel(niv=index-1) - pmb.isel(niv=index+1))*100)
+        dthetadp    = dthetadpsup*cinf + dthetadpinf*csup
+        # =============================================================================
+        # Interpolation verticale des vents sur la surface isotheta
+        # =============================================================================
+        utheta = cinf*ds["uj1"].sel(niv=index-1) + csup*ds["uj1"].sel(niv=index)
+        vtheta = cinf*ds["vj1"].sel(niv=index-1) + csup*ds["vj1"].sel(niv=index)
+        # =============================================================================
+        # Calcul du tourbillon sur la surface isotheta
+        # =============================================================================
+        xpi   = 2.*math.asin(1.)
+        xpih  = xpi/2.
+        xpi2  = xpi*2.
+        ddlat = xpi/(nlat - 1)
+        ddlon = xpi2/(nlon - 1)
+        
+        dlat     = xpih - (np.arange(1,nlat+1)-1)*ddlat
+        cosphi   = np.cos(dlat)
+        coriolis = 2 * omega * np.sin(dlat)
+        
+        dvdlam, dudphi, eta = xr.DataArray(np.full((nlat, nlon), np.nan), dims=["lat","lon"]), \
+                            xr.DataArray(np.full((nlat, nlon), np.nan), dims=["lat","lon"]), \
+                            xr.DataArray(np.full((nlat, nlon), np.nan), dims=["lat","lon"])
+        dvdlam[1:-1,0]      = (vtheta[1:-1,1] - vtheta[1:-1,-1]) / (2*ddlon)
+        dvdlam[1:-1,-1]     = (vtheta[1:-1,0] - vtheta[1:-1,-2]) / (2*ddlon)
+        dvdlam[1:-1,1:-1]   = (vtheta[1:-1,2:] - vtheta[1:-1,0:-2]) / (2*ddlon)
+        dudphi[1:-1,:]      = (utheta[0:-2,:]*cosphi[0:-2, np.newaxis] - utheta[2:,:]*cosphi[2:, np.newaxis]) / (2*ddlat)
+        eta[1:-1,:]         = (dvdlam[1:-1,:] - dudphi[1:-1,:]) / (rter * cosphi[1:-1, np.newaxis])
+        # =============================================================================
+        # Calcul du tourbillon potentiel proprement dit
+        # =============================================================================
+        pv = -gg * (eta + coriolis[:,np.newaxis]) * dthetadp
+        # =============================================================================
+        # Traitement des poles
+        # =============================================================================
+        pvpolen  = np.sum(pv[1,:]/nlon)
+        pvpoles  = np.sum(pv[-2,:]/nlon)
+        pv[0,:]  = pvpolen
+        pv[-1,:] = pvpoles
+        # =============================================================================
+        # Temperature
+        # =============================================================================
+        num_id = 1
+        gridfi_t = cinf*ds["tj1"].sel(niv=index-1) + csup*ds["tj1"].sel(niv=index)
+        gridfi_t = xr.concat([gridfi_t, gridfi_t[:,0]], dim="lon").expand_dims("theta")
+        if i_theta==0:
+            gridfi_t_da = gridfi_t
+        else:
+            gridfi_t_da = xr.concat([gridfi_t_da, gridfi_t], dim="theta")
+        # =============================================================================
+        # PV
+        # =============================================================================
+        num_id = 2
+        gridfi_pv = xr.concat([pv, pv[:,0]], dim="lon").expand_dims("theta")
+        if i_theta==0:
+            gridfi_pv_da = gridfi_pv
+        else:
+            gridfi_pv_da = xr.concat([gridfi_pv_da, gridfi_pv], dim="theta")
+        # =============================================================================
+        # Especes transportees
+        # =============================================================================
+        for ii in range(nlong):
+            nc = il_arr[ii]
+            num_id = nc+3
+            if nc==11:
+                gridfi_espece = ((cinf*ds["qj1"].sel(niv=index-1, dim1=8) + csup*ds["qj1"].sel(niv=index, dim1=8)) - \
+                                (cinf*ds["qj1"].sel(niv=index-1, dim1=11) + csup*ds["qj1"].sel(niv=index, dim1=11))) / \
+                                (cinf*ds["qj1"].sel(niv=index-1, dim1=11) + csup*ds["qj1"].sel(niv=index, dim1=11))
+            elif nc==23:
+                gridfi_espece = cinf*ds["qj1"].sel(niv=index-1, dim1=nc) + \
+                                csup*ds["qj1"].sel(niv=index, dim1=nc) + \
+                                2*(cinf*ds["qj1"].sel(niv=index-1, dim1=25)) + \
+                                csup*ds["qj1"].sel(niv=index, dim1=25)                              
+            else:
+                gridfi_espece = cinf*ds["qj1"].sel(niv=index-1, dim1=nc) + csup*ds["qj1"].sel(niv=index, dim1=nc)
+            gridfi_espece = xr.concat([gridfi_espece, gridfi_espece[:,0]], dim="lon").expand_dims("theta")
+            if i_theta==0:
+                species_da[il_names[ii]] = gridfi_espece
+            else:
+                species_da[il_names[ii]] = xr.concat([species_da[il_names[ii]], gridfi_espece], dim="theta")
+        # =============================================================================
+        # Especes a l'equilibre
+        # =============================================================================
+        for ii in range(nshort):
+            nc = is_arr[ii]
+            num_id = nbcon + nc + 3
+            gridfi_espece = cinf*ds["hc"].sel(niv=index-1, dim2=nc) + csup*ds["hc"].sel(niv=index, dim2=nc)
+            gridfi_espece = xr.concat([gridfi_espece, gridfi_espece[:,0]], dim="lon").expand_dims("theta")
+            if i_theta==0:
+                species_da[is_names[ii]] = gridfi_espece
+            else:
+                species_da[is_names[ii]] = xr.concat([species_da[is_names[ii]], gridfi_espece], dim="theta")
+    output_ds = output_ds.assign({"t":gridfi_t_da, "pv":gridfi_pv_da}).assign(species_da)
+    return output_ds
+
+def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
+    vars_to_plot = ["N2O","HCl","ClONO2","NOx","ClOx","BrOx","HNO3","Surface_Area","O3loss", "O3","NO2"]
+    cmap = np.loadtxt("/usr/local/REPROBUS/colors1.csv", delimiter=",").T/255
+    cmap /= cmap.max()
+    cmap = [tuple(line) for line in cmap[1:-1,:]]
+    custom_cmap = ListedColormap(cmap)
+    theta_arr = dataset["theta"].values
+    for var in vars_to_plot:
+        for ii,theta_val in enumerate(theta_arr):
+            fig = plt.figure()
+            p = (dataset[var][0,:,:]*PLOT_COEFFS[var]).plot.contourf(
+                                                                    transform=ccrs.PlateCarree(),
+                                                                    subplot_kws={"projection": ccrs.SouthPolarStereo()},
+                                                                    cmap=custom_cmap,
+                                                                    levels=np.array(PLOT_LEVELS[var]))
+            p1 = (dataset[var][0,:,:]*PLOT_COEFFS[var]).plot.contour(
+                                                                    transform=ccrs.PlateCarree(),
+                                                                    subplot_kws={"projection": ccrs.SouthPolarStereo()},
+                                                                    colors="k", linestyles="-", linewidths=0.5,
+                                                                    levels=np.array(PLOT_LEVELS[var]))
+            p.axes.coastlines(color="w", linewidth=1.5)
+            obj = p.axes.gridlines(linestyle="--", linewidth=0.5)
+            p.axes.set_extent([-180, 180, -90, -30], ccrs.PlateCarree())
+            title = f"Reprobus : {var} {PLOT_UNITS[var]}\n{theta_val} K"
+            p.axes.set_title(title, fontsize=15)
+            p.colorbar.ax.yaxis.label.set_fontsize(15)
+            p.colorbar.set_ticks(np.arange(0,370,20))
+            p.colorbar.ax.tick_params(labelsize=10)
+
+def create_figures(date: str, restart_dirpath: str, im_dir: str) -> None:
+    ds = compute_on_theta_levels(date, restart_dirpath)
+    create_theta_plots(ds, im_dir)
+
 
 if __name__=="__main__":
     import argparse
@@ -266,11 +522,14 @@ if __name__=="__main__":
     parser.add_argument("--date", type=str, help="End date of the simulation in YYMMDD format")
     parser.add_argument("--restart-dir", type=str, help="Path to the directory with the MODEL_history Fortran binary files")
     parser.add_argument("--res-dir",  type=str, help="Path to the directory where the station result files are stored")
+    parser.add_argument("--image-dir", type=str, help="Path to the directory where to save the figures")
     args = parser.parse_args()
 
     global LOGGER
     LOGGER = start_log()
 
     LOGGER.info("Starting post-processing of the REPROBUS output")
-    MODEL_post_processing(args.date, args.restart_dir)
+    # MODEL_post_processing(args.date, args.restart_dir)
     stations_post_processing(args.date, args.res_dir)
+    create_figures(args.date, args.restart_dir, args.image_dir)
+
