@@ -11,6 +11,7 @@ import glob
 import logging
 from matplotlib.colors import ListedColormap
 import cartopy.crs as ccrs
+import math
 
 SPECIES_1 = ['N2O','CH4','H2O','NOy','HNO3','N2O5','Cly','Ox','CO','OClO','Passive Ox','H2SO4','HCl','ClONO2','HOCl','Cl2','H2O2','ClNO2','HBr','BrONO2','NOx','HNO4','ClOx','BrOx','Cl2O2','HOBr','BrCl','CH2O','CH3O2','CH3O2H','CFC-11','CFC-12','CFC-113','CCl4','CH3CCl3*','CH3Cl','HCFC-22*','CH3Br','H-1211*','H-1301','Bry','CH2Br2*','HNO3 GAS']
 SPECIES_2 = ['O(1D)','OH','Cl','O(3P)','O3','HO2','NO2','NO','Br','N','ClO','BrO','NO3','H','CH3']
@@ -53,6 +54,38 @@ PLOT_UNITS = {
 "O3loss" : "(%)",
 "O3" : "(ppmv)",
 "NO2" : "(ppbv)"}
+
+PLOT_COLORS = {
+"N2O" : 44,
+"HCl" : 42,
+"ClONO2" : 42,
+"NOx" : 45,
+"ClOx" : 41,
+"BrOx" : 46,
+"HNO3" : 44,
+"Surface_Area" : 42,
+"O3loss" : 42,
+"O3" : 42,
+"NO2" : 45
+}
+
+COLOR_PALETTES = {
+41 : np.array([[0,221,154,6,5,5,5,5,179,179,251,252,251,252,251,252,251,255],
+[0,141,39,3,124,204,253,253,254,254,253,189,126,61,3,35,75,255],
+[0,252,247,249,249,251,206,8,1,1,7,8,26,54,115,202,251,255]]),
+42 : np.array([[0,221,181,154,6,5,5,5,5,5,179,251,252,251,252,251,252,251,255],
+[0,141,61,39,3,124,204,253,253,253,254,253,189,126,61,3,35,75,255],
+[0,252,251,247,249,249,251,206,8,8,1,7,8,26,54,115,202,251,255]]),
+44 : np.array([[0,221,181,154,6,5,5,5,4,5,5,179,251,252,251,252,251,251,252,251,255],
+[0,141,61,39,3,124,204,253,253,253,253,254,253,189,126,61,3,3,35,75,255],
+[0,252,251,247,249,249,251,206,119,8,8,1,7,8,26,54,97,115,202,251,255]]),
+45 : np.array([[0,221,181,154,6,5,5,5,4,5,5,179,251,252,251,252,251,251,252,254,251,255],
+[0,141,61,39,3,124,204,253,253,253,253,254,253,189,126,61,3,3,35,42,75,255],
+[0,252,251,247,249,249,251,206,119,8,8,1,7,8,26,54,97,115,202,214,251,255]]),
+46:np.array([[0,221,181,154,122,6,5,5,5,4,5,5,179,251,255,252,251,252,251,251,252,254,251,255],
+[0,141,61,39,11,3,124,204,253,253,253,253,254,253,239,189,126,61,3,3,35,42,75,255],
+[0,252,251,247,249,249,249,251,206,119,8,8,1,7,0,8,26,54,97,115,202,214,251,255]])
+}    
 
 
 def start_log() -> logging.Logger:
@@ -482,12 +515,12 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
 
 def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
     vars_to_plot = ["N2O","HCl","ClONO2","NOx","ClOx","BrOx","HNO3","Surface_Area","O3loss", "O3","NO2"]
-    cmap = np.loadtxt("/usr/local/REPROBUS/colors1.csv", delimiter=",").T/255
-    cmap /= cmap.max()
-    cmap = [tuple(line) for line in cmap[1:-1,:]]
-    custom_cmap = ListedColormap(cmap)
     theta_arr = dataset["theta"].values
     for var in vars_to_plot:
+        cmap = COLOR_PALETTES[PLOT_COLORS[var]].T/255
+        cmap /= cmap.max()
+        cmap = [tuple(line) for line in cmap[1:-1,:]]
+        custom_cmap = ListedColormap(cmap)
         for ii,theta_val in enumerate(theta_arr):
             fig = plt.figure()
             p = (dataset[var][0,:,:]*PLOT_COEFFS[var]).plot.contourf(
@@ -530,6 +563,6 @@ if __name__=="__main__":
 
     LOGGER.info("Starting post-processing of the REPROBUS output")
     # MODEL_post_processing(args.date, args.restart_dir)
-    stations_post_processing(args.date, args.res_dir)
+    # stations_post_processing(args.date, args.res_dir)
     create_figures(args.date, args.restart_dir, args.image_dir)
 
