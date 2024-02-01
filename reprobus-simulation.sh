@@ -73,7 +73,9 @@ function count_days(){
 }
 
 function cleanup(){
-    rm -f ${WDIR}/*
+    if [ ! -z ${WDIR} ]; then
+        rm -f ${WDIR}/*
+    fi
 }
 
 function main(){
@@ -162,7 +164,7 @@ function main(){
         mv fort.71 ${RES_DIR}/reprobus_niamey_${date_end}12_${EXP}
         mv fort.72 ${RES_DIR}/reprobus_teresina_${date_end}12_${EXP}
 
-        python3 /home/resos/git/reprobus/post-process-reprobus.py --date ${date_end} --restart-dir ${RESTART_DIR} --res-dir ${RES_DIR}
+        python3 /home/resos/git/reprobus/post-process-reprobus.py --date ${date_end} --restart-dir ${RESTART_DIR} --res-dir ${RES_DIR} --image-dir ${RESTART_DIR}
 
         rm ${WDIR}/ecmwf_${date_start}
         rm ${WDIR}/ecmwf_${date_end}
