@@ -86,6 +86,12 @@ function cleanup(){
     fi
 }
 
+function prepare_directories(){
+    if [ ! -d ${WDIR} ]; then mkdir -p ${WDIR}; fi
+    if [ ! -d ${RESTART_DIR} ]; then mkdir -p ${WDIR}; fi
+    if [ ! -d ${RES_DIR} ]; then mkdir -p ${WDIR}; fi
+}
+
 function main(){
 
     info_msg "!======================================================================!"
@@ -97,6 +103,7 @@ function main(){
     info_msg "!       |_|  \_\______|_|    |_|  \_\\\____/|____/ \____/|_____/        !"
     info_msg "!======================================================================!"
 
+    prepare_directories
     cd ${WDIR}
 
     info_msg "Compiling REPROBUS"
