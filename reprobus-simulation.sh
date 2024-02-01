@@ -74,7 +74,15 @@ function count_days(){
 
 function cleanup(){
     if [ ! -z ${WDIR} ]; then
-        rm -f ${WDIR}/*
+        rm -f ${WDIR}/ecmwf_*
+        rm -f ${WDIR}/reprobus_*
+        rm -f ${WDIR}/altitude.f90
+        rm -f ${WDIR}/h2so4.txt
+        rm -f ${WDIR}/mopitt_corrected.txt
+        rm -f ${WDIR}/jstrato.txt
+        rm -f ${WDIR}/relief.txt
+        rm -f ${WDIR}/jno.f90
+        rm -f ${WDIR}/qinit2d.txt
     fi
 }
 
