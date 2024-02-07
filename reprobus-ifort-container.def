@@ -1,5 +1,5 @@
 BootStrap: docker
-From: intel/oneapi-hpckit
+From: ubuntu
 
 %files
     #/home/damali/Work/SEDOO/REPROBUS_wdir/src /usr/local/REPROBUS/src
@@ -7,12 +7,20 @@ From: intel/oneapi-hpckit
     ./src.zip /usr/local/REPROBUS/src.zip
     #./src /usr/local/REPROBUS/src
 
+%environment
+    export PATH="${PATH}:/opt/intel/oneapi/compiler/latest/bin"
+
 %post
     apt-get update -y && apt-get upgrade -y && apt-get install -y software-properties-common && DEBIAN_FRONTEND="noninteractive" TZ="Europe" apt-get install -y tzdata
     apt-get install -y automake build-essential wget tar git cmake ncurses-term nano python3 python3-pip unzip
     apt-get clean
 
     pip3 install numpy scipy matplotlib xarray pandas netCDF4
+
+    cd /usr/local
+    wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/41df6814-ec4b-4698-a14d-421ee2b02aa7/l_fortran-compiler_p_2024.0.2.28.sh
+    chmod +x ./l_fortran-compiler_p_2024.0.2.28.sh
+    ./l_fortran-compiler_p_2024.0.2.28.sh -a -s --eula accept
 
     cd /usr/local/REPROBUS
     unzip src.zip -d ./src
