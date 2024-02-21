@@ -39,6 +39,7 @@ $ singularity exec [--bind path1,path2] reprobus-image.sif ./reprobus-simulation
 - interactive mode (run a shell within a container, then launch the command within the shell of the container)
 ```
 $ singularity shell [--bind path1,path2] reprobus-image.sif
+Singularity>
 Singularity> ./reprobus-simulation.sh --config reprobus-user.conf
 ```
 
