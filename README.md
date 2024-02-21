@@ -12,16 +12,17 @@ The REPROBUS tool is containerized into a Singularity container so one must have
 ## Installation
 ```
 git clone https://github.com/aeris-data/reprobus.git
-sudo singularity build ./reprobus.sif ./reprobus-ifort-container.def
+sudo singularity build ./reprobus-image.sif ./reprobus-ifort-container.def
 ```
-The `singularity build` command will build the container `reprobus.sif` from its definition file, using the source files got from the git repo; so for the build it is important to call the command from the git repo directory that one has made. 
+
+The `singularity build` command will build the container `reprobus-image.sif` from its definition file, using the source files got from the git repo; so for the build it is important to call the command from the git repo directory that one has made. 
 
 ⚠️ ***The build requires either sudo rights or being able to use `--fakeroot` option (in a case of a multi-user server).*** 
 
 Afterwards, the sif image can be placed anywhere (even on another system) independently of the source files. To run the image no sudo rights are required.
 
 ## Usage
-The main script is `reprobus-simulation.sh` which needs the input configuration file reprobus-user.conf (which can be renamed, the name is not important). This bash script handles user's input parameters, launch simulations and post-process simulation results. The main usage is 
+The main script is `reprobus-simulation.sh` which needs the input configuration file `reprobus-user.conf` (which can be renamed, the name is not important). This bash script handles user's input parameters, launch simulations and post-process simulation results. The main usage is 
 ```
 ./reprobus-simulation.sh --config reprobus-user.conf
 ```
@@ -29,6 +30,17 @@ The main script is `reprobus-simulation.sh` which needs the input configuration 
 ⚠️ ***The script must be launched inside the Singularity container.***
 
 The outputs of the simulation are : simulation results for the 40 observation stations, the daily REPROBUS recovery files (also needed for the ulterior simulations) and the PNG files of the results visualisation . More details about input/output and folder structure are in the manual `xxx.pdf`.
+
+There are two possible ways to launch the simulation inside the Singularity container:
+- one-line command (run a command within a container, wait for the end of simulation to regain control of the shell)
+```
+$ singularity exec [--bind path1,path2] reprobus-image.sif ./reprobus-simulation.sh --config reprobus-user.conf
+```
+- interactive mode (run a shell within a container, then launch the command within the shell of the container)
+```
+$ singularity shell [--bind path1,path2] reprobus-image.sif
+Singularity> ./reprobus-simulation.sh --config reprobus-user.conf
+```
 
 ### Bind option
 
