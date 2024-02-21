@@ -3,7 +3,6 @@
 set -e
 SCRIPT_PATH=$0
 SCRIPT_NAME=$(basename ${SCRIPT_PATH})
-trap cleanup EXIT
 
 function help() {
     bold=$(tput bold)
@@ -73,23 +72,15 @@ function count_days(){
 }
 
 function cleanup(){
-    if [ ! -z ${WDIR} ]; then
-        rm -f ${WDIR}/ecmwf_*
-        rm -f ${WDIR}/reprobus_*
-        rm -f ${WDIR}/altitude.f90
-        rm -f ${WDIR}/h2so4.txt
-        rm -f ${WDIR}/mopitt_corrected.txt
-        rm -f ${WDIR}/jstrato.txt
-        rm -f ${WDIR}/relief.txt
-        rm -f ${WDIR}/jno.f90
-        rm -f ${WDIR}/qinit2d.txt
+    if [ ! -z ${WDIR} ] && [ -d ${WDIR} ]; then
+        rm -f ${WDIR}/*
     fi
 }
 
 function prepare_directories(){
     if [ ! -d ${WDIR} ]; then mkdir -p ${WDIR}; fi
-    if [ ! -d ${RESTART_DIR} ]; then mkdir -p ${WDIR}; fi
-    if [ ! -d ${RES_DIR} ]; then mkdir -p ${WDIR}; fi
+    if [ ! -d ${RESTART_DIR} ]; then mkdir -p ${RESTART_DIR}; fi
+    if [ ! -d ${RES_DIR} ]; then mkdir -p ${RES_DIR}; fi
 }
 
 function main(){
@@ -104,6 +95,7 @@ function main(){
     info_msg "!======================================================================!"
 
     prepare_directories
+    cleanup
     cd ${WDIR}
 
     info_msg "Compiling REPROBUS"
@@ -118,10 +110,11 @@ function main(){
     ln -s /usr/local/REPROBUS/src/ecmwf_137_levels.txt ${WDIR}/ecmwf_137_levels.txt
 
     if [[ "${COMPILER}" == "ifort" ]]; then
-        ifort -r8 -mcmodel=medium -convert big_endian -o reprobus_1442 reprobus_1442.f jno.f90 altitude.f90
+        source /opt/intel/oneapi/setvars.sh
+        ifx -r8 -mcmodel=medium -convert big_endian -o reprobus_1442 reprobus_1442.f jno.f90 altitude.f90
     fi
     if [[ "${COMPILER}" == "nvidia" ]]; then
-        nvfortran -r8 -mcmodel=medium -fast -Kieee -byteswapio -o reprobus_${EXP:2:4} reprobus_${EXP:2:4}.f jno.f90 altitude.f90
+        /opt/nvidia/hpc_sdk/Linux_x86_64/23.9/compilers/bin/pgf90 -C -r8 -mcmodel=medium -fast -Kieee -byteswapio -o reprobus_${EXP:2:4} reprobus_${EXP:2:4}.f jno.f90 altitude.f90
     fi
 
     N_DAYS=$(count_days)
