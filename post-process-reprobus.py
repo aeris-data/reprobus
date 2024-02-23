@@ -12,6 +12,9 @@ import logging
 from matplotlib.colors import ListedColormap
 import cartopy.crs as ccrs
 import math
+import sys
+import matplotlib.ticker as mticker
+import matplotlib.path as mpath
 
 SPECIES_1 = ['N2O','CH4','H2O','NOy','HNO3','N2O5','Cly','Ox','CO','OClO','Passive Ox','H2SO4','HCl','ClONO2','HOCl','Cl2','H2O2','ClNO2','HBr','BrONO2','NOx','HNO4','ClOx','BrOx','Cl2O2','HOBr','BrCl','CH2O','CH3O2','CH3O2H','CFC-11','CFC-12','CFC-113','CCl4','CH3CCl3*','CH3Cl','HCFC-22*','CH3Br','H-1211*','H-1301','Bry','CH2Br2*','HNO3 GAS']
 SPECIES_2 = ['O(1D)','OH','Cl','O(3P)','O3','HO2','NO2','NO','Br','N','ClO','BrO','NO3','H','CH3']
@@ -38,7 +41,7 @@ PLOT_COEFFS = {
 "BrOx" : 1e-12,
 "HNO3" : 1e-9,
 "Surface_Area" : 1e-8,
-"O3loss" : -1e-7,
+"O3loss" : 1e-2,
 "O3" : 1e-6,
 "NO2" : 1e-9}
 
@@ -343,7 +346,8 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
     # COEFFICIENTS A ET B DES NIVEAUX HYBRIDES
     # =============================================================================
     LOGGER.info("Computing a and b coefficients")
-    df = pd.read_csv("/usr/local/REPROBUS/src/ecmwf_137_levels.txt",
+    # df = pd.read_csv("/usr/local/REPROBUS/src/ecmwf_137_levels.txt",
+    df = pd.read_csv("/home/damali/Work/SEDOO/REPROBUS_src/REPROBUS/SRC/ecmwf_137_levels.txt",
                      sep="\t",
                      skiprows=2,
                      names = ["n","a","b","ph[hPa]","pf[hPa]"])
@@ -498,15 +502,15 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
             LOGGER.info(f" -- Espèce transporté {ii+1}/{nlong}")
             nc = il_arr[ii]
             num_id = nc+3
-            if nc==11:
-                gridfi_espece = ((cinf*ds["qj1"].sel(niv=index-1, dim1=8) + csup*ds["qj1"].sel(niv=index, dim1=8)) - \
-                                (cinf*ds["qj1"].sel(niv=index-1, dim1=11) + csup*ds["qj1"].sel(niv=index, dim1=11))) / \
-                                (cinf*ds["qj1"].sel(niv=index-1, dim1=11) + csup*ds["qj1"].sel(niv=index, dim1=11))
-            elif nc==23:
+            if nc==10:
+                gridfi_espece = ((cinf*ds["qj1"].sel(niv=index-1, dim1=7) + csup*ds["qj1"].sel(niv=index, dim1=7)) - \
+                                (cinf*ds["qj1"].sel(niv=index-1, dim1=10) + csup*ds["qj1"].sel(niv=index, dim1=10))) / \
+                                (cinf*ds["qj1"].sel(niv=index-1, dim1=10) + csup*ds["qj1"].sel(niv=index, dim1=10))
+            elif nc==22:
                 gridfi_espece = cinf*ds["qj1"].sel(niv=index-1, dim1=nc) + \
                                 csup*ds["qj1"].sel(niv=index, dim1=nc) + \
-                                2*(cinf*ds["qj1"].sel(niv=index-1, dim1=25)) + \
-                                csup*ds["qj1"].sel(niv=index, dim1=25)                              
+                                2*(cinf*ds["qj1"].sel(niv=index-1, dim1=24)) + \
+                                csup*ds["qj1"].sel(niv=index, dim1=24)                              
             else:
                 gridfi_espece = cinf*ds["qj1"].sel(niv=index-1, dim1=nc) + csup*ds["qj1"].sel(niv=index, dim1=nc)
             gridfi_espece = xr.concat([gridfi_espece, gridfi_espece[:,0]], dim="lon").expand_dims("theta")
@@ -542,34 +546,91 @@ def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
         for ii,theta_val in enumerate(theta_arr):
             LOGGER.info(f"Creating figure {var} on {theta_val} K")
             # LOGGER.info((dataset[var][ii,:,:]/PLOT_COEFFS[var]).values)
-            fig = plt.figure()
+            # fig = plt.figure()
+            # ax = fig.add_axes(projection=ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0))
+            # ax = plt.subplot(fig, projection=ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0))
+            # fig, ax = plt.subplots(1)
+            fig, ax = plt.subplots(subplot_kw={'projection': ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0)})
+            print(ax)
+
+            # Compute a circle in axes coordinates, which we can use as a boundary
+            # for the map. We can pan/zoom as much as we like - the boundary will be
+            # permanently circular.
+            theta = np.linspace(0, 2*np.pi, 100)
+            center, radius = [0.5, 0.5], 0.5
+            verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+            circle = mpath.Path(verts * radius + center)
+            ax.set_boundary(circle, transform=ax.axes.transAxes)
+            # print(dir(ax))
+            # p1.axes.set_boundary(circle, transform=p1.axes.transAxes)
+
             p = (dataset[var][ii,:,:]/PLOT_COEFFS[var]).plot.contourf(
                                                                     transform=ccrs.PlateCarree(),
-                                                                    subplot_kws={"projection": ccrs.SouthPolarStereo()},
+                                                                    subplot_kws={"projection": ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0)},
                                                                     cmap=custom_cmap,
                                                                     levels=np.array(PLOT_LEVELS[var]))
             p1 = (dataset[var][ii,:,:]/PLOT_COEFFS[var]).plot.contour(
                                                                     transform=ccrs.PlateCarree(),
-                                                                    subplot_kws={"projection": ccrs.SouthPolarStereo()},
+                                                                    subplot_kws={"projection": ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0)},
                                                                     colors="k", linestyles="-", linewidths=0.5,
-                                                                    levels=np.array(PLOT_LEVELS[var]))
-            p.axes.coastlines(color="w", linewidth=1.5)
-            obj = p.axes.gridlines(linestyle="--", linewidth=0.5)
+                                                                    levels=np.array(PLOT_LEVELS[var][:-1]))
+            
+            # p1.axes.set_boundary(circle, transform=ax.axes.transAxes)
+            p1.axes.clabel(p1,
+                           inline=True,
+                           fontsize=5,
+                           inline_spacing=1)
+            p1.axes.coastlines(color="w", linewidth=1.5)
+            obj = p.axes.gridlines(linestyle="--", linewidth=0.5, color="w")
+            obj.ylocator = mticker.FixedLocator([-80,-70,-60,-50,-40,-30])
             p.axes.set_extent([-180, 180, -90, -30], ccrs.PlateCarree())
             title = f"Reprobus : {var} {PLOT_UNITS[var]}\n{theta_val} K"
             p.axes.set_title(title, fontsize=15)
             p.colorbar.ax.yaxis.label.set_fontsize(15)
-            p.colorbar.set_ticks(np.array(PLOT_LEVELS[var]))
+            p.colorbar.set_ticks(np.array(PLOT_LEVELS[var][:-1]))
             p.colorbar.ax.tick_params(labelsize=10)
+
+            # p1.axes.set_boundary(circle, transform=p1.axes.transAxes)
+            # ax.set_boundary(circle, transform=ax.axes.transAxes)
+
+            # # Compute a circle in axes coordinates, which we can use as a boundary
+            # # for the map. We can pan/zoom as much as we like - the boundary will be
+            # # permanently circular.
+            # theta = np.linspace(0, 2*np.pi, 100)
+            # center, radius = [0.5, 0.5], 0.5
+            # verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+            # circle = mpath.Path(verts * radius + center)
+            # fig.axes[0].set_boundary(circle, transform=p.axes.transAxes)
+            # # p1.axes.set_boundary(circle, transform=p1.axes.transAxes)
+
+            # print(dir(fig))
+            
             fig.savefig(f"{im_dir}/{var}_{int(theta_val)}.png", dpi=200, bbox_inches='tight')
             plt.close(fig)
 
 def create_figures(date: str, restart_dirpath: str, im_dir: str) -> None:
     # ds = compute_on_theta_levels(date, restart_dirpath)
-    # ds.to_netcdf(f"{im_dir}/image_data.nc")
-    ds = xr.open_dataset(f"{im_dir}/image_data.nc")
+    # ds.to_netcdf(f"{im_dir}/image_data_ref.nc")
+    ds = xr.open_dataset(f"{im_dir}/image_data_ref.nc")
     create_theta_plots(ds, im_dir)
 
+def check_arguments(date: str, restart_dirpath: str, res_dirpath: str, image_dirpath: str) -> int:
+    status = 0
+    if not os.path.exists(restart_dirpath):
+        LOGGER.error("Requested directory with MODEL_history files was not found!")
+        status = -1
+    else:
+        fortran_file_filepath = glob.glob(f"{restart_dirpath}/MODEL_history_{date}12_??????")
+        if len(fortran_file_filepath)==0:
+            LOGGER.error("No file was found for your requested date!")
+            status = -1
+    if not os.path.exists(res_dirpath):
+        LOGGER.error("Requested directory with result stations files was not found!")
+        status = -1
+    if not os.path.exists(image_dirpath):
+        LOGGER.error("Requested directory where to save quicklooks was not found!")
+        status = -1
+    return status
 
 if __name__=="__main__":
     import argparse
@@ -585,8 +646,12 @@ if __name__=="__main__":
     global LOGGER
     LOGGER = start_log()
 
-    LOGGER.info("Starting post-processing of the REPROBUS output")
-    # MODEL_post_processing(args.date, args.restart_dir)
-    # stations_post_processing(args.date, args.res_dir)
-    create_figures(args.date, args.restart_dir, args.image_dir)
+    status = check_arguments(args.date, args.restart_dir, args.res_dir, args.image_dir)
+    if status==-1:
+        sys.exit(1)
+    else:
+        LOGGER.info("Starting post-processing of the REPROBUS output")
+        # MODEL_post_processing(args.date, args.restart_dir)
+        # stations_post_processing(args.date, args.res_dir)
+        create_figures(args.date, args.restart_dir, args.image_dir)
 
