@@ -17,17 +17,17 @@ SPECIES_1 = ['N2O','CH4','H2O','NOy','HNO3','N2O5','Cly','Ox','CO','OClO','Passi
 SPECIES_2 = ['O(1D)','OH','Cl','O(3P)','O3','HO2','NO2','NO','Br','N','ClO','BrO','NO3','H','CH3']
 
 PLOT_LEVELS = {
-"N2O" : [-20.,0.,20.,40.,60.,80.,100.,120.,140.,160.,180.,200.,220.,240.,260.,280.,300.,320.,340.],
-"HCl" : [-0.2,0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0],
-"ClONO2" : [-0.2,0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0],
-"NOx" : [-0.25,0,0.25,0.5,0.75,1.,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.,4.25,4.5],
-"ClOx" : [-0.025,0.,0.025,0.05,0.075,0.1,0.2,0.3,0.4,0.5,1.0,1.5,2.0,2.5,3.0,3.5],
-"BrOx" : [-1.,0,1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12.,13.,14.,15.,16.,17.,18.,19.,20.,],
-"HNO3" : [-1,0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0],
-"Surface_Area" : [-1.5,0,1.5,3.0,4.5,6.0,7.5,9.0,10.5,12.,13.5,15.,16.5,18.0,19.5,21.,22.5],
-"O3loss" : [-75.,-70.,-65.,-60.,-55.,-50.,-45.,-40,-35.,-30.,-25.,-20.,-15.,-10.,-5.,0.,5.],
-"O3" : [-0.4,0.,0.4,0.8,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4.0,4.4,4.8,5.2,5.6,6.],
-"NO2" : [-0.25,0,0.25,0.5,0.75,1.,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.,4.25,4.5]}
+"N2O" : [0.,20.,40.,60.,80.,100.,120.,140.,160.,180.,200.,220.,240.,260.,280.,300.,320.,340.,360.],
+"HCl" : [0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.2,3.4,3.6,3.8,4.0],
+"ClONO2" : [0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.2],
+"NOx" : [0,0.25,0.5,0.75,1.,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.,4.25,4.5,4.75],
+"ClOx" : [0.,0.025,0.05,0.075,0.1,0.2,0.3,0.4,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0],
+"BrOx" : [0,1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12.,13.,14.,15.,16.,17.,18.,19.,20.,21.],
+"HNO3" : [0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0],
+"Surface_Area" : [0,1.,2.,3.,4.,5.,10.,15.,20.,25.,30.,35.,40.,45.,50.,55.,60.,65.],
+"O3loss" : [-100.,-90.,-80.,-70.,-60.,-50.,-40,-35.,-30.,-25.,-20.,-15.,-10.,-5.,0.,5.],
+"O3" : [0.,0.4,0.8,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4.0,4.4,4.8,5.2,5.6,6.,6.4],
+"NO2" : [0,0.25,0.5,0.75,1.,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.,4.25,4.5,4.75]}
 
 PLOT_COEFFS = {
 "N2O" : 1e-9,
@@ -38,7 +38,7 @@ PLOT_COEFFS = {
 "BrOx" : 1e-12,
 "HNO3" : 1e-9,
 "Surface_Area" : 1e-8,
-"O3loss" : 1,
+"O3loss" : -1e-7,
 "O3" : 1e-6,
 "NO2" : 1e-9}
 
@@ -56,36 +56,42 @@ PLOT_UNITS = {
 "NO2" : "(ppbv)"}
 
 PLOT_COLORS = {
-"N2O" : 44,
-"HCl" : 42,
-"ClONO2" : 42,
-"NOx" : 45,
-"ClOx" : 41,
-"BrOx" : 46,
-"HNO3" : 44,
-"Surface_Area" : 42,
-"O3loss" : 42,
-"O3" : 42,
-"NO2" : 45
+"N2O" : len(PLOT_LEVELS["N2O"])-1,
+"HCl" : len(PLOT_LEVELS["HCl"])-1,
+"ClONO2" : len(PLOT_LEVELS["ClONO2"])-1,
+"NOx" : len(PLOT_LEVELS["NOx"])-1,
+"ClOx" : len(PLOT_LEVELS["ClOx"])-1,
+"BrOx" : len(PLOT_LEVELS["BrOx"])-1,
+"HNO3" : len(PLOT_LEVELS["HNO3"])-1,
+"Surface_Area" : len(PLOT_LEVELS["Surface_Area"])-1,
+"O3loss" : len(PLOT_LEVELS["O3loss"])-1,
+"O3" : len(PLOT_LEVELS["O3"])-1,
+"NO2" : len(PLOT_LEVELS["NO2"])-1
 }
 
 COLOR_PALETTES = {
-41 : np.array([[0,221,154,6,5,5,5,5,179,179,251,252,251,252,251,252,251,255],
-[0,141,39,3,124,204,253,253,254,254,253,189,126,61,3,35,75,255],
-[0,252,247,249,249,251,206,8,1,1,7,8,26,54,115,202,251,255]]),
-42 : np.array([[0,221,181,154,6,5,5,5,5,5,179,251,252,251,252,251,252,251,255],
-[0,141,61,39,3,124,204,253,253,253,254,253,189,126,61,3,35,75,255],
-[0,252,251,247,249,249,251,206,8,8,1,7,8,26,54,115,202,251,255]]),
-44 : np.array([[0,221,181,154,6,5,5,5,4,5,5,179,251,252,251,252,251,251,252,251,255],
-[0,141,61,39,3,124,204,253,253,253,253,254,253,189,126,61,3,3,35,75,255],
-[0,252,251,247,249,249,251,206,119,8,8,1,7,8,26,54,97,115,202,251,255]]),
-45 : np.array([[0,221,181,154,6,5,5,5,4,5,5,179,251,252,251,252,251,251,252,254,251,255],
-[0,141,61,39,3,124,204,253,253,253,253,254,253,189,126,61,3,3,35,42,75,255],
-[0,252,251,247,249,249,251,206,119,8,8,1,7,8,26,54,97,115,202,214,251,255]]),
-46:np.array([[0,221,181,154,122,6,5,5,5,4,5,5,179,251,255,252,251,252,251,251,252,254,251,255],
-[0,141,61,39,11,3,124,204,253,253,253,253,254,253,239,189,126,61,3,3,35,42,75,255],
-[0,252,251,247,249,249,249,251,206,119,8,8,1,7,0,8,26,54,97,115,202,214,251,255]])
-}    
+15 : np.array([[0,221,154,6,5,5,5,5,179,251,252,251,252,251,252,251,255],
+[0,141,39,3,124,204,253,253,254,253,189,126,61,3,35,75,255],
+[0,252,247,249,249,251,206,8,1,7,8,26,54,115,202,251,255]]),
+16 : np.array([[0,221,181,154,6,5,5,5,5,179,251,252,251,252,251,252,251,255],
+[0,141,61,39,3,124,204,253,253,254,253,189,126,61,3,35,75,255],
+[0,252,251,247,249,249,251,206,8,1,7,8,26,54,115,202,251,255]]),
+17 : np.array([[0,221,181,154,6,5,5,5,5,179,251,252,251,252,251,251,252,252,255],
+[0,141,61,39,3,124,204,253,253,254,253,189,126,61,3,3,35,35,255],
+[0,252,251,247,249,249,251,206,8,1,7,8,26,54,97,115,202,202,255]]),
+18 : np.array([[0,221,181,154,6,5,5,5,4,5,179,251,252,251,252,251,251,252,251,255],
+[0,141,61,39,3,124,204,253,253,253,254,253,189,126,61,3,3,35,75,255],
+[0,252,251,247,249,249,251,206,119,8,1,7,8,26,54,97,115,202,251,255]]),
+19:np.array([[0,221,181,154,6,5,5,5,4,5,179,251,252,251,252,251,251,252,254,251,255],
+[0,141,61,39,3,124,204,253,253,253,254,253,189,126,61,3,3,35,42,75,255],
+[0,252,251,247,249,249,251,206,119,8,1,7,8,26,54,97,115,202,214,251,255]]),
+20:np.array([[0,221,181,154,122,6,5,5,5,4,5,179,251,255,251,252,251,251,252,254,251,255],
+[0,141,61,39,11,3,124,204,253,253,253,254,253,239,126,61,3,3,35,42,75,255],
+[0,252,251,247,249,249,249,251,206,119,8,1,7,0,26,54,97,115,202,214,251,255]]),
+21:np.array([[0,221,181,154,122,6,5,5,5,4,5,179,251,255,252,251,252,251,251,252,254,251,255],
+[0,141,61,39,11,3,124,204,253,253,253,254,253,239,189,126,61,3,3,35,42,75,255],
+[0,252,251,247,249,249,249,251,206,119,8,1,7,0,8,26,54,97,115,202,214,251,255]]),
+}
 
 
 def start_log() -> logging.Logger:
@@ -336,7 +342,8 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
     # =============================================================================
     # COEFFICIENTS A ET B DES NIVEAUX HYBRIDES
     # =============================================================================
-    df = pd.read_csv("/usr/local/REPROBUS/ecmwf_137_levels.txt",
+    LOGGER.info("Computing a and b coefficients")
+    df = pd.read_csv("/usr/local/REPROBUS/src/ecmwf_137_levels.txt",
                      sep="\t",
                      skiprows=2,
                      names = ["n","a","b","ph[hPa]","pf[hPa]"])
@@ -345,6 +352,7 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
     # =============================================================================
     # ISOTHETA ; ISENTROPE CHOISIE POUR LE TRACE
     # =============================================================================
+    LOGGER.info("Reading data")
     nbcon = 44
     ncm = 15
     fortran_file_filepath = glob.glob(f"{restart_dirpath}/MODEL_history_{date}12_??????")[0]
@@ -401,15 +409,17 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
                                     "lon":(["lon"], lon)})
     species_da = {}
     for i_theta, theta_value in enumerate(theta_arr):
-        n_fich = n_fich + 1
+        LOGGER.info(f"Computing variables for theta {theta_value} K")
         # =============================================================================
         # Calcul de theta à chaque point de grille
         # =============================================================================
+        LOGGER.info(" -- Calcul de theta")
         pmb = ds["aaa"] + ds["pj1"]*ds["bbb"]
         theta = ds["tj1"]*((p0/pmb)**rascp)
         # =============================================================================
         # Detection des niveaux encadrant isotheta, calcul des poids
         # =============================================================================
+        LOGGER.info(" -- Calcul des niveaux")
         index = (theta<theta_value).argmax(dim="niv")
         cinf  = (theta_value - theta.isel(niv=index)) / (theta.isel(niv=index-1) - theta.isel(niv=index))
         csup  = 1 - cinf
@@ -423,11 +433,13 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
         # =============================================================================
         # Interpolation verticale des vents sur la surface isotheta
         # =============================================================================
+        LOGGER.info(" -- Interpolation verticale")
         utheta = cinf*ds["uj1"].sel(niv=index-1) + csup*ds["uj1"].sel(niv=index)
         vtheta = cinf*ds["vj1"].sel(niv=index-1) + csup*ds["vj1"].sel(niv=index)
         # =============================================================================
         # Calcul du tourbillon sur la surface isotheta
         # =============================================================================
+        LOGGER.info(" -- Calcul du tourbillon")
         xpi   = 2.*math.asin(1.)
         xpih  = xpi/2.
         xpi2  = xpi*2.
@@ -453,6 +465,7 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
         # =============================================================================
         # Traitement des poles
         # =============================================================================
+        LOGGER.info(" -- Traitement des pôles")
         pvpolen  = np.sum(pv[1,:]/nlon)
         pvpoles  = np.sum(pv[-2,:]/nlon)
         pv[0,:]  = pvpolen
@@ -460,6 +473,7 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
         # =============================================================================
         # Temperature
         # =============================================================================
+        LOGGER.info(" -- Temperature")
         num_id = 1
         gridfi_t = cinf*ds["tj1"].sel(niv=index-1) + csup*ds["tj1"].sel(niv=index)
         gridfi_t = xr.concat([gridfi_t, gridfi_t[:,0]], dim="lon").expand_dims("theta")
@@ -470,6 +484,7 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
         # =============================================================================
         # PV
         # =============================================================================
+        LOGGER.info(" -- PV")
         num_id = 2
         gridfi_pv = xr.concat([pv, pv[:,0]], dim="lon").expand_dims("theta")
         if i_theta==0:
@@ -480,6 +495,7 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
         # Especes transportees
         # =============================================================================
         for ii in range(nlong):
+            LOGGER.info(f" -- Espèce transporté {ii+1}/{nlong}")
             nc = il_arr[ii]
             num_id = nc+3
             if nc==11:
@@ -502,6 +518,7 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
         # Especes a l'equilibre
         # =============================================================================
         for ii in range(nshort):
+            LOGGER.info(f" -- Espèce à l'équilibre {ii+1}/{nshort}")
             nc = is_arr[ii]
             num_id = nbcon + nc + 3
             gridfi_espece = cinf*ds["hc"].sel(niv=index-1, dim2=nc) + csup*ds["hc"].sel(niv=index, dim2=nc)
@@ -514,7 +531,8 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
     return output_ds
 
 def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
-    vars_to_plot = ["N2O","HCl","ClONO2","NOx","ClOx","BrOx","HNO3","Surface_Area","O3loss", "O3","NO2"]
+    # vars_to_plot = ["N2O","HCl","ClONO2","NOx","ClOx","BrOx","HNO3","Surface_Area","O3loss", "O3","NO2"]
+    vars_to_plot = ["O3loss"]
     theta_arr = dataset["theta"].values
     for var in vars_to_plot:
         cmap = COLOR_PALETTES[PLOT_COLORS[var]].T/255
@@ -522,13 +540,15 @@ def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
         cmap = [tuple(line) for line in cmap[1:-1,:]]
         custom_cmap = ListedColormap(cmap)
         for ii,theta_val in enumerate(theta_arr):
+            LOGGER.info(f"Creating figure {var} on {theta_val} K")
+            # LOGGER.info((dataset[var][ii,:,:]/PLOT_COEFFS[var]).values)
             fig = plt.figure()
-            p = (dataset[var][0,:,:]*PLOT_COEFFS[var]).plot.contourf(
+            p = (dataset[var][ii,:,:]/PLOT_COEFFS[var]).plot.contourf(
                                                                     transform=ccrs.PlateCarree(),
                                                                     subplot_kws={"projection": ccrs.SouthPolarStereo()},
                                                                     cmap=custom_cmap,
                                                                     levels=np.array(PLOT_LEVELS[var]))
-            p1 = (dataset[var][0,:,:]*PLOT_COEFFS[var]).plot.contour(
+            p1 = (dataset[var][ii,:,:]/PLOT_COEFFS[var]).plot.contour(
                                                                     transform=ccrs.PlateCarree(),
                                                                     subplot_kws={"projection": ccrs.SouthPolarStereo()},
                                                                     colors="k", linestyles="-", linewidths=0.5,
@@ -539,11 +559,15 @@ def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
             title = f"Reprobus : {var} {PLOT_UNITS[var]}\n{theta_val} K"
             p.axes.set_title(title, fontsize=15)
             p.colorbar.ax.yaxis.label.set_fontsize(15)
-            p.colorbar.set_ticks(np.arange(0,370,20))
+            p.colorbar.set_ticks(np.array(PLOT_LEVELS[var]))
             p.colorbar.ax.tick_params(labelsize=10)
+            fig.savefig(f"{im_dir}/{var}_{int(theta_val)}.png", dpi=200, bbox_inches='tight')
+            plt.close(fig)
 
 def create_figures(date: str, restart_dirpath: str, im_dir: str) -> None:
-    ds = compute_on_theta_levels(date, restart_dirpath)
+    # ds = compute_on_theta_levels(date, restart_dirpath)
+    # ds.to_netcdf(f"{im_dir}/image_data.nc")
+    ds = xr.open_dataset(f"{im_dir}/image_data.nc")
     create_theta_plots(ds, im_dir)
 
 
