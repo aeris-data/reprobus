@@ -609,9 +609,9 @@ def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
             plt.close(fig)
 
 def create_figures(date: str, restart_dirpath: str, im_dir: str) -> None:
-    # ds = compute_on_theta_levels(date, restart_dirpath)
+    ds = compute_on_theta_levels(date, restart_dirpath)
     # ds.to_netcdf(f"{im_dir}/image_data_ref.nc")
-    ds = xr.open_dataset(f"{im_dir}/image_data_ref.nc")
+    # ds = xr.open_dataset(f"{im_dir}/image_data_ref.nc")
     create_theta_plots(ds, im_dir)
 
 def check_arguments(date: str, restart_dirpath: str, res_dirpath: str, image_dirpath: str) -> int:
