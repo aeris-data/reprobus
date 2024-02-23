@@ -15,6 +15,11 @@ import math
 import sys
 import matplotlib.ticker as mticker
 import matplotlib.path as mpath
+import locale
+
+# language_code = 'en_US'
+# # Set the locale to the desired language
+# locale.setlocale(locale.LC_TIME, language_code)
 
 SPECIES_1 = ['N2O','CH4','H2O','NOy','HNO3','N2O5','Cly','Ox','CO','OClO','Passive Ox','H2SO4','HCl','ClONO2','HOCl','Cl2','H2O2','ClNO2','HBr','BrONO2','NOx','HNO4','ClOx','BrOx','Cl2O2','HOBr','BrCl','CH2O','CH3O2','CH3O2H','CFC-11','CFC-12','CFC-113','CCl4','CH3CCl3*','CH3Cl','HCFC-22*','CH3Br','H-1211*','H-1301','Bry','CH2Br2*','HNO3 GAS']
 SPECIES_2 = ['O(1D)','OH','Cl','O(3P)','O3','HO2','NO2','NO','Br','N','ClO','BrO','NO3','H','CH3']
@@ -346,8 +351,8 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
     # COEFFICIENTS A ET B DES NIVEAUX HYBRIDES
     # =============================================================================
     LOGGER.info("Computing a and b coefficients")
-    # df = pd.read_csv("/usr/local/REPROBUS/src/ecmwf_137_levels.txt",
-    df = pd.read_csv("/home/damali/Work/SEDOO/REPROBUS_src/REPROBUS/SRC/ecmwf_137_levels.txt",
+    df = pd.read_csv("/usr/local/REPROBUS/src/ecmwf_137_levels.txt",
+    # df = pd.read_csv("/home/damali/Work/SEDOO/REPROBUS_src/REPROBUS/SRC/ecmwf_137_levels.txt",
                      sep="\t",
                      skiprows=2,
                      names = ["n","a","b","ph[hPa]","pf[hPa]"])
@@ -411,6 +416,8 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
     output_ds = xr.Dataset(coords={"theta":(["theta"], theta_arr),
                                     "lat":(["lat"], lat),
                                     "lon":(["lon"], lon)})
+    output_ds.attrs["date"] = date
+    output_ds.attrs["version"] = data_string[-6:].decode("ascii")
     species_da = {}
     for i_theta, theta_value in enumerate(theta_arr):
         LOGGER.info(f"Computing variables for theta {theta_value} K")
@@ -551,7 +558,7 @@ def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
             # ax = plt.subplot(fig, projection=ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0))
             # fig, ax = plt.subplots(1)
             fig, ax = plt.subplots(subplot_kw={'projection': ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0)})
-            print(ax)
+            # print(ax)
 
             # Compute a circle in axes coordinates, which we can use as a boundary
             # for the map. We can pan/zoom as much as we like - the boundary will be
@@ -584,8 +591,10 @@ def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
             obj = p.axes.gridlines(linestyle="--", linewidth=0.5, color="w")
             obj.ylocator = mticker.FixedLocator([-80,-70,-60,-50,-40,-30])
             p.axes.set_extent([-180, 180, -90, -30], ccrs.PlateCarree())
-            title = f"Reprobus : {var} {PLOT_UNITS[var]}\n{theta_val} K"
-            p.axes.set_title(title, fontsize=15)
+            date_string = dt.datetime.strftime(dt.datetime.strptime(dataset.attrs['date'], "%Y%m%d"), "%d %B %Y")
+            p.axes.set_title(f"Reprobus {dataset.attrs['version']}\n{date_string}", fontsize=15, loc="left")
+            p.axes.set_title("", fontsize=15, loc="center")
+            p.axes.set_title(f"{var} {PLOT_UNITS[var]}\n{theta_val} K", fontsize=15, loc="right")
             p.colorbar.ax.yaxis.label.set_fontsize(15)
             p.colorbar.set_ticks(np.array(PLOT_LEVELS[var][:-1]))
             p.colorbar.ax.tick_params(labelsize=10)
