@@ -517,7 +517,7 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
                 gridfi_espece = cinf*ds["qj1"].sel(niv=index-1, dim1=nc) + \
                                 csup*ds["qj1"].sel(niv=index, dim1=nc) + \
                                 2*(cinf*ds["qj1"].sel(niv=index-1, dim1=24)) + \
-                                csup*ds["qj1"].sel(niv=index, dim1=24)                              
+                                csup*ds["qj1"].sel(niv=index, dim1=24)
             else:
                 gridfi_espece = cinf*ds["qj1"].sel(niv=index-1, dim1=nc) + csup*ds["qj1"].sel(niv=index, dim1=nc)
             gridfi_espece = xr.concat([gridfi_espece, gridfi_espece[:,0]], dim="lon").expand_dims("theta")
@@ -542,8 +542,8 @@ def compute_on_theta_levels(date: str, restart_dirpath: str) -> xr.Dataset:
     return output_ds
 
 def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
-    # vars_to_plot = ["N2O","HCl","ClONO2","NOx","ClOx","BrOx","HNO3","Surface_Area","O3loss", "O3","NO2"]
-    vars_to_plot = ["O3loss"]
+    vars_to_plot = ["N2O","HCl","ClONO2","NOx","ClOx","BrOx","HNO3","Surface_Area","O3loss", "O3","NO2"]
+    #vars_to_plot = ["O3loss"]
     theta_arr = dataset["theta"].values
     for var in vars_to_plot:
         cmap = COLOR_PALETTES[PLOT_COLORS[var]].T/255
