@@ -172,16 +172,16 @@ function main(){
         mv fort.71 ${RES_DIR}/reprobus_niamey_${date_end}12_${EXP}
         mv fort.72 ${RES_DIR}/reprobus_teresina_${date_end}12_${EXP}
 
-        python3 /home/resos/git/reprobus/post-process-reprobus.py --date ${date_end} --restart-dir ${RESTART_DIR} --res-dir ${RES_DIR} --image-dir ${RESTART_DIR}
+        python3 /home/resos/git/reprobus/post-process-reprobus.py --date ${date_end} --restart-dir ${RESTART_DIR} --res-dir ${RES_DIR} --image-dir ${IMAGES_DIR}
 
-        rm ${WDIR}/ecmwf_${date_start}
-        rm ${WDIR}/ecmwf_${date_end}
-        if [[ ${NSTART} == 1 ]]; then
-            rm ${WDIR}/fort.90
-        else
-            rm ${WDIR}/qinit2d.txt
-            rm ${WDIR}/ecmwf_o3_20221201
-        fi
+#        rm ${WDIR}/ecmwf_${date_start}
+#        rm ${WDIR}/ecmwf_${date_end}
+#        if [[ ${NSTART} == 1 ]]; then
+#            rm ${WDIR}/fort.90
+#        else
+#            rm ${WDIR}/qinit2d.txt
+#            rm ${WDIR}/ecmwf_o3_20221201
+#        fi
 
         DATE_IN=$(date -d "${DATE_IN} + 1 day" "+%Y%m%d")
 
