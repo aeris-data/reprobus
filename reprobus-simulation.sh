@@ -81,6 +81,7 @@ function prepare_directories(){
     if [ ! -d ${WDIR} ]; then mkdir -p ${WDIR}; fi
     if [ ! -d ${RESTART_DIR} ]; then mkdir -p ${RESTART_DIR}; fi
     if [ ! -d ${RES_DIR} ]; then mkdir -p ${RES_DIR}; fi
+    if [ ! -d ${IMAGES_DIR} ]; then mkdir -p ${IMAGES_DIR}; fi
 }
 
 function main(){
