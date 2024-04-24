@@ -552,24 +552,12 @@ def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
         custom_cmap = ListedColormap(cmap)
         for ii,theta_val in enumerate(theta_arr):
             LOGGER.info(f"Creating figure {var} on {theta_val} K")
-            # LOGGER.info((dataset[var][ii,:,:]/PLOT_COEFFS[var]).values)
-            # fig = plt.figure()
-            # ax = fig.add_axes(projection=ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0))
-            # ax = plt.subplot(fig, projection=ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0))
-            # fig, ax = plt.subplots(1)
             fig, ax = plt.subplots(subplot_kw={'projection': ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0)})
-            # print(ax)
-
-            # Compute a circle in axes coordinates, which we can use as a boundary
-            # for the map. We can pan/zoom as much as we like - the boundary will be
-            # permanently circular.
             theta = np.linspace(0, 2*np.pi, 100)
             center, radius = [0.5, 0.5], 0.5
             verts = np.vstack([np.sin(theta), np.cos(theta)]).T
             circle = mpath.Path(verts * radius + center)
             ax.set_boundary(circle, transform=ax.axes.transAxes)
-            # print(dir(ax))
-            # p1.axes.set_boundary(circle, transform=p1.axes.transAxes)
 
             p = (dataset[var][ii,:,:]/PLOT_COEFFS[var]).plot.contourf(
                                                                     transform=ccrs.PlateCarree(),
@@ -596,23 +584,10 @@ def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
             p.axes.set_title("", fontsize=15, loc="center")
             p.axes.set_title(f"{var} {PLOT_UNITS[var]}\n{theta_val} K", fontsize=15, loc="right")
             p.colorbar.ax.yaxis.label.set_fontsize(15)
+            p.colorbar.ax.yaxis.label.set_rotation(270)
+            p.colorbar.ax.yaxis.label.set_verticalalignment("baseline")
             p.colorbar.set_ticks(np.array(PLOT_LEVELS[var][:-1]))
             p.colorbar.ax.tick_params(labelsize=10)
-
-            # p1.axes.set_boundary(circle, transform=p1.axes.transAxes)
-            # ax.set_boundary(circle, transform=ax.axes.transAxes)
-
-            # # Compute a circle in axes coordinates, which we can use as a boundary
-            # # for the map. We can pan/zoom as much as we like - the boundary will be
-            # # permanently circular.
-            # theta = np.linspace(0, 2*np.pi, 100)
-            # center, radius = [0.5, 0.5], 0.5
-            # verts = np.vstack([np.sin(theta), np.cos(theta)]).T
-            # circle = mpath.Path(verts * radius + center)
-            # fig.axes[0].set_boundary(circle, transform=p.axes.transAxes)
-            # # p1.axes.set_boundary(circle, transform=p1.axes.transAxes)
-
-            # print(dir(fig))
             
             fig.savefig(f"{im_dir}/{var}_{int(theta_val)}.png", dpi=200, bbox_inches='tight')
             plt.close(fig)
