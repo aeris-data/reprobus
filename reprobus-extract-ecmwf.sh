@@ -26,34 +26,46 @@
 # DO NOT CHANGE ANYTHING BELOW
 
 set -e
-module load ecmwf-toolbox
+
+SCRIPT_NAME=$(basename "$0")
 
 function help() {
     bold=$(tput bold)
     normal=$(tput sgr0)
-    echo "# ########################################"
-    echo "# #                          __   _      #"
-    echo "# #  SCRIPT FOR            _(  )_( )_    #"
-    echo "# #   THE ECMWF           (_   _    _)   #"
-    echo "# #    DATA EXTRACTION   / /(_) (__)     #"
-    echo "# #                     / / / / / /      #"
-    echo "# #                    / / / / / /       #"
-    echo "# ########################################"
-    echo "#"
-    echo "# ${bold}${SCRIPT_NAME}${normal} script handles the ECMWF data extraction needed for the REPROBUS simulations."
-    echo "# The user have to define the start and end date of the data extraction and the paths"
-    echo "# to the working directory and data directory."
-    echo "# The working directory will just contain the request file for the MARS API; the data"
-    echo "# directory will contain the final extracted data; the working and data directories can be the same."
-    echo "# The data will be extracted on the model levels of the ECMWF."
-    echo "# The extraction is performed on the MARS server, so the script should be launched on this server."
-    echo "#"
-    echo "# Usage: ${SCRIPT_NAME} [options] arguments"
-    echo "# Options:"
-    echo "#   ${bold}-h, --help${normal}     Show this help message and exit"
-    echo "# Arguments:"
-    echo "#   ${bold}--config conf_filepath${normal}  This argument must correspond to the configuration"
-    echo "# file where the user defines input parameters needed for the extraction."
+    echo ""
+    echo "###   SCRIPT FOR            _(  )_( )_    "
+    echo "###    THE ECMWF           (_   _    _)   "
+    echo "###     DATA EXTRACTION   / /(_) (__)     "
+    echo "###                      / / / / / /      "
+    echo "###                     / / / / / /       "
+    echo "###"
+    echo "### ${bold}${SCRIPT_NAME}${normal} script handles the ECMWF data extraction needed for the REPROBUS simulations."
+    echo "### The user have to define the start and end date of the data extraction and the paths"
+    echo "### to the working directory and data directory."
+    echo "### The working directory will just contain the request file for the MARS API; the data"
+    echo "### directory will contain the final extracted data; the working and data directories can be the same."
+    echo "### The data will be extracted on the model levels of the ECMWF."
+    echo "### The extraction is performed on the MARS server, hence the script must be launched on MARS server."
+    echo "###"
+    echo "### Usage: ${SCRIPT_NAME} [options] arguments"
+    echo "### Options:"
+    echo "###   ${bold}-h, --help${normal}              Show this help message and exit"
+    echo "### Arguments:"
+    echo "###   ${bold}--config conf_filepath${normal}  This argument must correspond to the configuration"
+    echo "###                           file where the user defines input parameters needed"
+    echo "###                           for the extraction See an example of a configuration file below."
+    echo "###"
+    echo "### +--------------------------------------------------------------------------------+"
+    echo "### | Example filename : ${bold}my_parameters.conf${normal}                                          |"
+    echo "### | Example content below :                                                        |"
+    echo "### |                                                                                |"
+    echo "### | START_DATE='20230101'                                                          |"
+    echo "### | END_DATE='20230105'                                                            |"
+    echo "### | SPATIAL_RESOLUTION='1.125'                                                     |"
+    echo "### | DATA_DIR='/my/dir/for/data'                                                    |"
+    echo "### | WORKING_DIR='/working/dir/for/aux/files'                                       |"
+    echo "### +--------------------------------------------------------------------------------+"
+    echo ""
 }
 
 function info_msg(){
@@ -161,6 +173,7 @@ EOF
 }
 
 function main(){
+    module load ecmwf-toolbox
 
     write_fortran_script
     cp ${WORKING_DIR}/grib_rep ${DATA_DIR}/
