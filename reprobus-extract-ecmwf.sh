@@ -53,7 +53,7 @@ function help() {
     echo "### Arguments:"
     echo "###   ${bold}--config conf_filepath${normal}  This argument must correspond to the configuration"
     echo "###                           file where the user defines input parameters needed"
-    echo "###                           for the extraction See an example of a configuration file below."
+    echo "###                           for the extraction. See an example of a configuration file below."
     echo "###"
     echo "### +--------------------------------------------------------------------------------+"
     echo "### | Example filename : ${bold}my_parameters.conf${normal}                                          |"
@@ -126,6 +126,11 @@ function check_args(){
 }
 
 function write_fortran_script(){
+    # nb_loop=5488 in this Fortran script because we have :
+    #  - 5 variable of 137 levels each + 1 variable on single level
+    #  - each variable is extracted on times 0,3,6,9,12,15,18,21 hour of the day (8 different times)
+    #  - (5x137 + 1)x8 = 5488 records for one day of extracted data
+    # and each record is on lat-lon grid, so nb_data=(nx)x(ny) pixels
     nx=$(bc <<< "scale=0; 360/${SPATIAL_RESOLUTION}")
     ny=$(bc <<< "scale=0; 180/${SPATIAL_RESOLUTION} + 1")
     ndata=$((${nx}*${ny}))
@@ -173,6 +178,13 @@ EOF
 }
 
 function main(){
+    if [ ! -d ${DATA_DIR} ]; then
+        mkdir -p ${DATA_DIR}
+    fi
+    if [ ! -d ${WORKING_DIR} ]; then
+        mkdir -p ${WORKING_DIR}
+    fi
+
     module load ecmwf-toolbox
 
     write_fortran_script
@@ -230,6 +242,7 @@ EOF
             grib_get_data -w time=${TIME_VALUES[i]},step=${STEP_VALUES[i]} -M -F "%.15e" ${DATA_DIR}/datafile >> ${DATA_DIR}/data
         done
 
+        cd ${DATA_DIR}
         ${DATA_DIR}/grib_rep
 
         mv ${DATA_DIR}/fort.10 ${DATA_DIR}/ecmwf_${DATE}
