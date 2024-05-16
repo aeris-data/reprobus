@@ -314,7 +314,7 @@ def stations_post_processing(date: str, result_dirpath: str) -> None:
         df_res = df_res.sort_values(by=["Station name", "Julian day"])
         stations = df_res["Station name"].unique()
         times    = df_res["Julian day"].unique()
-        output_filename = f"{result_dirpath}/${os.path.basename(input_file)}.nc"
+        output_filename = f"{result_dirpath}/{os.path.basename(input_file)}.nc"
         with nc.Dataset(output_filename, "w", format="NETCDF4") as ds:
             ds.conventions              = "CF-1.0"
             ds.netcdf_version_id        = nc.__netcdf4libversion__
@@ -592,11 +592,120 @@ def create_theta_plots(dataset: xr.Dataset, im_dir: str) -> None:
             fig.savefig(f"{im_dir}/{var}_{int(theta_val)}.png", dpi=200, bbox_inches='tight')
             plt.close(fig)
 
+def plot_north_pole(dataset: xr.Dataset, im_dir: str) -> None:
+    vars_to_plot = ["N2O","HCl","ClONO2","NOx","ClOx","BrOx","HNO3","Surface_Area","O3loss", "O3","NO2"]
+    #vars_to_plot = ["O3loss"]
+    theta_arr = dataset["theta"].values
+    for var in vars_to_plot:
+        cmap = COLOR_PALETTES[PLOT_COLORS[var]].T/255
+        cmap /= cmap.max()
+        cmap = [tuple(line) for line in cmap[1:-1,:]]
+        custom_cmap = ListedColormap(cmap)
+        for ii,theta_val in enumerate(theta_arr):
+            LOGGER.info(f"Creating figure {var} on {theta_val} K")
+            fig, ax = plt.subplots(subplot_kw={'projection': ccrs.AzimuthalEquidistant(central_latitude=90, central_longitude=0)})
+            theta = np.linspace(0, 2*np.pi, 100)
+            center, radius = [0.5, 0.5], 0.5
+            verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+            circle = mpath.Path(verts * radius + center)
+            ax.set_boundary(circle, transform=ax.axes.transAxes)
+
+            p = (dataset[var][ii,:,:]/PLOT_COEFFS[var]).plot.contourf(
+                                                                    transform=ccrs.PlateCarree(),
+                                                                    subplot_kws={"projection": ccrs.AzimuthalEquidistant(central_latitude=90, central_longitude=0)},
+                                                                    cmap=custom_cmap,
+                                                                    levels=np.array(PLOT_LEVELS[var]))
+            p1 = (dataset[var][ii,:,:]/PLOT_COEFFS[var]).plot.contour(
+                                                                    transform=ccrs.PlateCarree(),
+                                                                    subplot_kws={"projection": ccrs.AzimuthalEquidistant(central_latitude=90, central_longitude=0)},
+                                                                    colors="k", linestyles="-", linewidths=0.5,
+                                                                    levels=np.array(PLOT_LEVELS[var][:-1]))
+            
+            # p1.axes.set_boundary(circle, transform=ax.axes.transAxes)
+            p1.axes.clabel(p1,
+                           inline=True,
+                           fontsize=5,
+                           inline_spacing=1)
+            p1.axes.coastlines(color="w", linewidth=1.5)
+            obj = p.axes.gridlines(linestyle="--", linewidth=0.5, color="w")
+            obj.ylocator = mticker.FixedLocator([-80,-70,-60,-50,-40,-30])
+            p.axes.set_extent([-180, 180, -90, -30], ccrs.PlateCarree())
+            date_string = dt.datetime.strftime(dt.datetime.strptime(dataset.attrs['date'], "%Y%m%d"), "%d %B %Y")
+            p.axes.set_title(f"Reprobus {dataset.attrs['version']}\n{date_string}", fontsize=15, loc="left")
+            p.axes.set_title("", fontsize=15, loc="center")
+            p.axes.set_title(f"{var} {PLOT_UNITS[var]}\n{theta_val} K", fontsize=15, loc="right")
+            p.colorbar.ax.yaxis.label.set_fontsize(15)
+            p.colorbar.ax.yaxis.label.set_rotation(270)
+            p.colorbar.ax.yaxis.label.set_verticalalignment("baseline")
+            p.colorbar.set_ticks(np.array(PLOT_LEVELS[var][:-1]))
+            p.colorbar.ax.tick_params(labelsize=10)
+            fig.savefig(f"{im_dir}/{dataset.attrs['date']}_{var}_{int(theta_val)}.png", dpi=200, bbox_inches='tight')
+            plt.close(fig)
+
+def plot_south_pole(dataset: xr.Dataset, im_dir: str) -> None:
+    vars_to_plot = ["N2O","HCl","ClONO2","NOx","ClOx","BrOx","HNO3","Surface_Area","O3loss", "O3","NO2"]
+    #vars_to_plot = ["O3loss"]
+    theta_arr = dataset["theta"].values
+    for var in vars_to_plot:
+        cmap = COLOR_PALETTES[PLOT_COLORS[var]].T/255
+        cmap /= cmap.max()
+        cmap = [tuple(line) for line in cmap[1:-1,:]]
+        custom_cmap = ListedColormap(cmap)
+        for ii,theta_val in enumerate(theta_arr):
+            LOGGER.info(f"Creating figure {var} on {theta_val} K")
+            fig, ax = plt.subplots(subplot_kw={'projection': ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0)})
+            theta = np.linspace(0, 2*np.pi, 100)
+            center, radius = [0.5, 0.5], 0.5
+            verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+            circle = mpath.Path(verts * radius + center)
+            ax.set_boundary(circle, transform=ax.axes.transAxes)
+
+            p = (dataset[var][ii,:,:]/PLOT_COEFFS[var]).plot.contourf(
+                                                                    transform=ccrs.PlateCarree(),
+                                                                    subplot_kws={"projection": ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0)},
+                                                                    cmap=custom_cmap,
+                                                                    levels=np.array(PLOT_LEVELS[var]))
+            p1 = (dataset[var][ii,:,:]/PLOT_COEFFS[var]).plot.contour(
+                                                                    transform=ccrs.PlateCarree(),
+                                                                    subplot_kws={"projection": ccrs.AzimuthalEquidistant(central_latitude=-90, central_longitude=0)},
+                                                                    colors="k", linestyles="-", linewidths=0.5,
+                                                                    levels=np.array(PLOT_LEVELS[var][:-1]))
+            
+            # p1.axes.set_boundary(circle, transform=ax.axes.transAxes)
+            p1.axes.clabel(p1,
+                           inline=True,
+                           fontsize=5,
+                           inline_spacing=1)
+            p1.axes.coastlines(color="w", linewidth=1.5)
+            obj = p.axes.gridlines(linestyle="--", linewidth=0.5, color="w")
+            obj.ylocator = mticker.FixedLocator([-80,-70,-60,-50,-40,-30])
+            p.axes.set_extent([-180, 180, -90, -30], ccrs.PlateCarree())
+            date_string = dt.datetime.strftime(dt.datetime.strptime(dataset.attrs['date'], "%Y%m%d"), "%d %B %Y")
+            p.axes.set_title(f"Reprobus {dataset.attrs['version']}\n{date_string}", fontsize=15, loc="left")
+            p.axes.set_title("", fontsize=15, loc="center")
+            p.axes.set_title(f"{var} {PLOT_UNITS[var]}\n{theta_val} K", fontsize=15, loc="right")
+            p.colorbar.ax.yaxis.label.set_fontsize(15)
+            p.colorbar.ax.yaxis.label.set_rotation(270)
+            p.colorbar.ax.yaxis.label.set_verticalalignment("baseline")
+            p.colorbar.set_ticks(np.array(PLOT_LEVELS[var][:-1]))
+            p.colorbar.ax.tick_params(labelsize=10)
+            fig.savefig(f"{im_dir}/{dataset.attrs['date']}_{var}_{int(theta_val)}.png", dpi=200, bbox_inches='tight')
+            plt.close(fig)
+
 def create_figures(date: str, restart_dirpath: str, im_dir: str) -> None:
     ds = compute_on_theta_levels(date, restart_dirpath)
     # ds.to_netcdf(f"{im_dir}/image_data_ref.nc")
     # ds = xr.open_dataset(f"{im_dir}/image_data_ref.nc")
-    create_theta_plots(ds, im_dir)
+    data_date = dt.datetime.strptime(dataset.attrs['date'], "%Y%m%d")
+    if data_date.month in [12,1,2,3,4]:
+        LOGGER.info("The date is between December and April, plotting data for the Nothern hemisphere")
+        plot_north_pole(ds, im_dir)
+    elif data_date.month in [5,6,7,8,9,10,11]:
+        LOGGER.info("The date is between May and November, plotting data for the Southern hemisphere")
+        plot_south_pole(ds, im_dir)
+    else:
+        LOGGER.info("Can't recognize the date of the data, no images were created")
+    # create_theta_plots(ds, im_dir)
 
 def check_arguments(date: str, restart_dirpath: str, res_dirpath: str, image_dirpath: str) -> int:
     status = 0
@@ -636,6 +745,6 @@ if __name__=="__main__":
     else:
         LOGGER.info("Starting post-processing of the REPROBUS output")
         # MODEL_post_processing(args.date, args.restart_dir)
-        # stations_post_processing(args.date, args.res_dir)
+        stations_post_processing(args.date, args.res_dir)
         create_figures(args.date, args.restart_dir, args.image_dir)
 
