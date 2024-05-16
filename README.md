@@ -24,7 +24,7 @@ Afterwards, the sif image can be placed anywhere (even on another system) indepe
 ## Usage
 The main script is `reprobus-simulation.sh` which needs the input configuration file `reprobus-user.conf` (which can be renamed, the name is not important). This bash script handles user's input parameters, launch simulations and post-process simulation results. The main usage is 
 ```
-./reprobus-simulation.sh --config reprobus-user.conf
+$ ./reprobus-simulation.sh --config reprobus-user.conf
 ```
 
 ⚠️ ***The script must be launched inside the Singularity container.***
