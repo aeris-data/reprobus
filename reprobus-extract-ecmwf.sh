@@ -1,30 +1,5 @@
 #!/bin/bash
 
-#############################################
-#  SCRIPT FOR                   __   _      #
-#   THE REPROBUS TOOL         _(  )_( )_    #
-#     ECMF DATA              (_   _    _)   #
-#        EXTRACTION         / /(_) (__)     #
-#                          / / / / / /      #
-#                         / / / / / /       #
-#############################################
-#
-# This script handles the ECMWF data extraction needed for the REPROBUS simulations.
-# The user have to define the start and end date of the data extraction and the paths
-# to the working directory and data directory.
-# The working directory will just contain the request file for the MARS API; the data
-# directory will contain the final extracted data; the working and data directories can be the same.
-# The data will be extracted on the model levels of the ECMWF.
-#
-# PARAMETERS SYNTAXE:
-#   START_DATE          = "YYYYMMDD"                    : start date of the data extraction
-#   END_DATE            = "YYYYMMDD"                    : end date of the data extraction
-#   SPATIAL_RESOLUTION  = "1.125"                       : spatial resolution of the data in degrees
-#   DATA_DIR            = "/home/path/to/data/dir"      : path to the data directory
-#   WORKING_DIR         = "/home/path/to/working/dir"   : path to the working directory
-########################################
-# DO NOT CHANGE ANYTHING BELOW
-
 set -e
 
 SCRIPT_NAME=$(basename "$0")
@@ -39,13 +14,14 @@ function help() {
     echo "###                      / / / / / /      "
     echo "###                     / / / / / /       "
     echo "###"
-    echo "### ${bold}${SCRIPT_NAME}${normal} script handles the ECMWF data extraction needed for the REPROBUS simulations."
-    echo "### The user have to define the start and end date of the data extraction and the paths"
-    echo "### to the working directory and data directory."
+    echo "### ${bold}${SCRIPT_NAME}${normal} script handles the ECMWF data extraction needed for the"
+    echo "### REPROBUS simulations. The user have to define the start and end date of the data"
+    echo "### extraction and the paths to the working directory and data directory."
     echo "### The working directory will just contain the request file for the MARS API; the data"
-    echo "### directory will contain the final extracted data; the working and data directories can be the same."
-    echo "### The data will be extracted on the model levels of the ECMWF."
-    echo "### The extraction is performed on the MARS server, hence the script must be launched on MARS server."
+    echo "### directory will contain the final extracted data; the working and data directories"
+    echo "### can be the same. The data will be extracted on the model levels of the ECMWF."
+    echo "### The extraction is performed on the MARS server, hence the script must be launched"
+    echo "### on MARS server."
     echo "###"
     echo "### Usage: ${SCRIPT_NAME} [options] arguments"
     echo "### Options:"
@@ -53,17 +29,16 @@ function help() {
     echo "### Arguments:"
     echo "###   ${bold}--config conf_filepath${normal}  This argument must correspond to the configuration"
     echo "###                           file where the user defines input parameters needed"
-    echo "###                           for the extraction See an example of a configuration file below."
+    echo "###                           for the extraction."
     echo "###"
     echo "### +--------------------------------------------------------------------------------+"
-    echo "### | Example filename : ${bold}my_parameters.conf${normal}                                          |"
+    echo "### | Example filename : ${bold}extraction.conf${normal}                                             |"
     echo "### | Example content below :                                                        |"
     echo "### |                                                                                |"
-    echo "### | START_DATE='20230101'                                                          |"
-    echo "### | END_DATE='20230105'                                                            |"
-    echo "### | SPATIAL_RESOLUTION='1.125'                                                     |"
-    echo "### | DATA_DIR='/my/dir/for/data'                                                    |"
-    echo "### | WORKING_DIR='/working/dir/for/aux/files'                                       |"
+    echo "### | START_DATE=\"20230101\"                                                          |"
+    echo "### | END_DATE=\"20230105\"                                                            |"
+    echo "### | DATA_DIR=\"/my/dir/for/data\"                                                    |"
+    echo "### | WORKING_DIR=\"/working/dir/for/aux/files\"                                       |"
     echo "### +--------------------------------------------------------------------------------+"
     echo ""
 }
@@ -90,10 +65,6 @@ function check_args(){
     fi
     if [[ -z ${END_DATE} ]]; then
         err_msg "No end date was defined. Exiting script."
-        exit 1
-    fi
-    if [[ -z ${SPATIAL_RESOLUTION} ]]; then
-        err_msg "No spatial resolution was defined. Exiting script."
         exit 1
     fi
     if [[ -z ${DATA_DIR} ]]; then
@@ -126,6 +97,11 @@ function check_args(){
 }
 
 function write_fortran_script(){
+    # nb_loop=5488 in this Fortran script because we have :
+    #  - 5 variable of 137 levels each + 1 variable on single level
+    #  - each variable is extracted on times 0,3,6,9,12,15,18,21 hour of the day (8 different times)
+    #  - (5x137 + 1)x8 = 5488 records for one day of extracted data
+    # and each record is on lat-lon grid, so nb_data=(nx)x(ny) pixels
     nx=$(bc <<< "scale=0; 360/${SPATIAL_RESOLUTION}")
     ny=$(bc <<< "scale=0; 180/${SPATIAL_RESOLUTION} + 1")
     ndata=$((${nx}*${ny}))
@@ -173,6 +149,15 @@ EOF
 }
 
 function main(){
+    if [ ! -d ${DATA_DIR} ]; then
+        mkdir -p ${DATA_DIR}
+    fi
+    if [ ! -d ${WORKING_DIR} ]; then
+        mkdir -p ${WORKING_DIR}
+    fi
+
+    SPATIAL_RESOLUTION="2."
+
     module load ecmwf-toolbox
 
     write_fortran_script
@@ -230,6 +215,7 @@ EOF
             grib_get_data -w time=${TIME_VALUES[i]},step=${STEP_VALUES[i]} -M -F "%.15e" ${DATA_DIR}/datafile >> ${DATA_DIR}/data
         done
 
+        cd ${DATA_DIR}
         ${DATA_DIR}/grib_rep
 
         mv ${DATA_DIR}/fort.10 ${DATA_DIR}/ecmwf_${DATE}
