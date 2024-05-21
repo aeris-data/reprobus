@@ -195,7 +195,7 @@ function main(){
         mv fort.71 ${RES_DIR}/reprobus_niamey_${date_end}12_${EXP}
         mv fort.72 ${RES_DIR}/reprobus_teresina_${date_end}12_${EXP}
 
-        python3 /home/resos/git/reprobus/post-process-reprobus.py --date ${date_end} --restart-dir ${RESTART_DIR} --res-dir ${RES_DIR} --image-dir ${IMAGES_DIR}
+        /usr/local/REPROBUS/venv/bin/python /home/resos/git/reprobus/post-process-reprobus.py --date ${date_end} --restart-dir ${RESTART_DIR} --res-dir ${RES_DIR} --image-dir ${IMAGES_DIR}
 
 #        rm ${WDIR}/ecmwf_${date_start}
 #        rm ${WDIR}/ecmwf_${date_end}
