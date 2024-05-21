@@ -696,7 +696,7 @@ def create_figures(date: str, restart_dirpath: str, im_dir: str) -> None:
     ds = compute_on_theta_levels(date, restart_dirpath)
     # ds.to_netcdf(f"{im_dir}/image_data_ref.nc")
     # ds = xr.open_dataset(f"{im_dir}/image_data_ref.nc")
-    data_date = dt.datetime.strptime(dataset.attrs['date'], "%Y%m%d")
+    data_date = dt.datetime.strptime(date, "%Y%m%d")
     if data_date.month in [12,1,2,3,4]:
         LOGGER.info("The date is between December and April, plotting data for the Nothern hemisphere")
         plot_north_pole(ds, im_dir)
