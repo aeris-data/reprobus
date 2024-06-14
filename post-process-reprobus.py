@@ -142,7 +142,7 @@ def MODEL_post_processing(date: str, restart_dirpath: str) -> None:
         hc = np.fromfile(file, dtype='>f8', count=180*91*137*15)
         hc = hc.reshape(15, 137, 91, 180)
 
-    pression_levels_filepath = "/home/resos/git/reprobus/table.csv"
+    pression_levels_filepath = "/usr/local/REPROBUS/src/ecmwf_levels_table.csv"
     df = pd.read_csv(pression_levels_filepath)
     pression_levels = [float(elem) for elem in df["pf [hPa]"].values[1:]]
 
