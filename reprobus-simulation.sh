@@ -148,11 +148,11 @@ function main(){
 
         info "Preparing input data for the simulation"
 
-        ln -s ${DATA_DIR}/ecmwf_${date_start} ${WDIR}/ecmwf_${date_start}
-        ln -s ${DATA_DIR}/ecmwf_${date_end} ${WDIR}/ecmwf_${date_end}
+        ln -sf ${DATA_DIR}/ecmwf_${date_start} ${WDIR}/ecmwf_${date_start}
+        ln -sf ${DATA_DIR}/ecmwf_${date_end} ${WDIR}/ecmwf_${date_end}
 
         if [[ ${NSTART} -eq 1 ]]; then
-            ln -s ${RESTART_DIR}/MODEL_history_${date_start}12_${EXP} ${WDIR}/fort.90
+            ln -sf ${RESTART_DIR}/MODEL_history_${date_start}12_${EXP} ${WDIR}/fort.90
         else
             # qinit_file=$(find /usr/local/REPROBUS/src -iname "qinit2d*")
             # ln -s ${qinit_file} ${WDIR}/qinit2d.txt
